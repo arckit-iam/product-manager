@@ -33,18 +33,18 @@ public class RestProductController {
 
     @GetMapping
     public List<ProductDto> getAllProducts() {
-        return productDtoMapper.toDtoList(productService.findAll());
+        return productDtoMapper.toDtoList(productService.getAllProducts());
     }
 
     @GetMapping("/{id}")
     public ProductDto getProductById(@PathVariable Long id) {
-        return productDtoMapper.toDto(productService.findById(id));
+        return productDtoMapper.toDto(productService.getProduct(id));
     }
 
     @PostMapping
     public ProductDto createProduct(@RequestBody ProductDto product) {
 
-        return productDtoMapper.toDto(productService.save(productDtoMapper.toDomain(product)));
+        return productDtoMapper.toDto(productService.createProduct(productDtoMapper.toDomain(product)));
     }
 
     @PutMapping("/{id}")
@@ -54,6 +54,6 @@ public class RestProductController {
 
     @DeleteMapping("/{id}")
     public void deleteProduct(@PathVariable Long id) {
-        productService.deleteById(id);
+        productService.deleteProduct(id);
     }
 }

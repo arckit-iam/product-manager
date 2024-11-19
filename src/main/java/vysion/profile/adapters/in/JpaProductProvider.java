@@ -3,10 +3,12 @@ package vysion.profile.adapters.in;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 
 import vysion.profile.domain.model.Product;
 import vysion.profile.domain.port.ProductProvider;
 
+@Repository
 public class JpaProductProvider implements ProductProvider{
 
     
@@ -31,6 +33,10 @@ public class JpaProductProvider implements ProductProvider{
     @Override
     public Product save(Product product) {
         return productEntityMapper.toDomain(productRepository.save(productEntityMapper.toEntity(product)));
+    }
+    @Override
+    public void deleteById(Long id) {
+       productRepository.deleteById(id);
     }
 
 

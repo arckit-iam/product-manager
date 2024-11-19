@@ -8,7 +8,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
-import vysion.profile.domain.model.Ressource;
 
 @Entity
 @Data
@@ -24,7 +23,7 @@ public class PermissionEntity {
 
     @ManyToOne
     @JoinColumn(name = "ressource_id", nullable = false)
-    private Ressource ressource;
+    private RessourceEntity ressource;
 
     @ManyToOne
     @JoinColumn(name = "permission_type_id", nullable = false)
