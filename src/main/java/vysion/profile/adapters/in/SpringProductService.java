@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import vysion.profile.domain.exception.UniqueConstraintViolationException;
+import vysion.profile.domain.exception.UniqueProductNameConstraintViolationException;
 import vysion.profile.domain.model.Product;
 import vysion.profile.domain.port.ProductProvider;
 import vysion.profile.domain.service.ProductService;
@@ -26,14 +26,14 @@ public class SpringProductService implements ProductService {
     }
 
     @Override
-    public Product getProduct(Long id) {
+    public Product getProduct(Long id){
         return productProvider.findById(id);
     }
 
     @Override
-    public Product createProduct(Product product) throws UniqueConstraintViolationException{
+    public Product createProduct(Product product) throws UniqueProductNameConstraintViolationException{
         if(productProvider.existeByName(product.getName())){
-            throw new UniqueConstraintViolationException("The product's name already exists");
+            throw new UniqueProductNameConstraintViolationException("The product's name already exists");
         }
         return productProvider.save(product);
     }

@@ -27,7 +27,7 @@ public class JpaProductProvider implements ProductProvider{
 
     @Override
     public Product findById(Long id) {
-        return productEntityMapper.toDomain(productRepository.findById(id).orElseThrow());
+        return productEntityMapper.toDomain(productRepository.findById(id).orElseThrow(()-> new ProductNotFoundException("The product does not exist")));
     }
 
     @Override
