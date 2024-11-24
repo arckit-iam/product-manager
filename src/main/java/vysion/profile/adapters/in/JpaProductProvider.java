@@ -38,6 +38,10 @@ public class JpaProductProvider implements ProductProvider{
     public void deleteById(Long id) {
        productRepository.deleteById(id);
     }
+    @Override
+    public boolean existeByName(String name) {
+        return productRepository.existsByName(name);
+    }
 
 
     

@@ -9,4 +9,5 @@ public interface ProductProvider {
     Product findById(Long id);
     Product save(Product product);
     void deleteById(Long id);
+    boolean existeByName(String name);
 }
