@@ -7,17 +7,22 @@ import org.springframework.stereotype.Service;
 
 import vysion.profile.domain.exception.UniqueProductNameConstraintViolationException;
 import vysion.profile.domain.model.Product;
+import vysion.profile.domain.model.Profile;
+import vysion.profile.domain.model.Ressource;
 import vysion.profile.domain.port.ProductProvider;
+import vysion.profile.domain.port.ProfileProvider;
 import vysion.profile.domain.service.ProductService;
 
 @Service
-public class SpringProductService implements ProductService {
+public class HexaProductService implements ProductService {
 
     private final ProductProvider productProvider;
+    private final ProfileProvider profileProvider;
     
     @Autowired
-    SpringProductService(ProductProvider productProvider){
+    HexaProductService(ProductProvider productProvider,ProfileProvider profileProvider){
         this.productProvider = productProvider;
+        this.profileProvider = profileProvider;
     }
 
     @Override
@@ -47,6 +52,19 @@ public class SpringProductService implements ProductService {
     public Product updateProduct(Long id, Product domain) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'updateProduct'");
+    }
+
+    @Override
+    public Product addResourceToProduct(Long productId, Ressource resource) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'addResourceToProduct'");
+    }
+
+    @Override
+    public Product addProfileToProduct(Long productId, Profile profile) {       
+        profile.setProduct(productProvider.findById(productId));
+        profileProvider.save(profile,productId);
+        return productProvider.findById(productId);
     }
     
 }

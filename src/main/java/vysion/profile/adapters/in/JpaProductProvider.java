@@ -27,12 +27,12 @@ public class JpaProductProvider implements ProductProvider{
 
     @Override
     public Product findById(Long id) {
-        return productEntityMapper.toDomain(productRepository.findById(id).orElseThrow(()-> new ProductNotFoundException("The product does not exist")));
+        return productEntityMapper.toDomain(productRepository.findById(id).orElseThrow(()-> new NotFoundException("The product does not exist")));
     }
 
     @Override
     public Product save(Product product) {
-        return productEntityMapper.toDomain(productRepository.save(productEntityMapper.toEntity(product)));
+        return productEntityMapper.toDomain(productRepository.saveAndFlush(productEntityMapper.toEntity(product)));
     }
     @Override
     public void deleteById(Long id) {

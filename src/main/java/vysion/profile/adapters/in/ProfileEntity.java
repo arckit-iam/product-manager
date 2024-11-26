@@ -24,4 +24,11 @@ public class ProfileEntity {
     private ProductEntity product;
   
     private String name;
+    private String description;
+
+    // public ProfileEntity addId(Long id){
+    //     this.product.setId(id);
+    //     return this;
+    // }
+
 }

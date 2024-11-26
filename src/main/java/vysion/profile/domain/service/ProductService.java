@@ -4,6 +4,8 @@ import java.util.List;
 
 import vysion.profile.domain.exception.UniqueProductNameConstraintViolationException;
 import vysion.profile.domain.model.Product;
+import vysion.profile.domain.model.Profile;
+import vysion.profile.domain.model.Ressource;
 
 public interface ProductService {
     List<Product> getAllProducts();
@@ -11,4 +13,6 @@ public interface ProductService {
     Product createProduct(Product product) throws UniqueProductNameConstraintViolationException;
     void deleteProduct(Long id);
     Product updateProduct(Long id, Product domain);
+    Product addResourceToProduct(Long productId, Ressource resource);
+    Product addProfileToProduct(Long productId, Profile profile);
 }

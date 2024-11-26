@@ -26,12 +26,13 @@ public class RestProductController {
 
     private final ProductService productService;
     private final ProductDtoMapper productDtoMapper;
-
+    private final ProfileDtoMapper profileDtoMapper;
     @Autowired
-    RestProductController(ProductService productService,ProductDtoMapper productDtoMapper){
+    RestProductController(ProductService productService,ProductDtoMapper productDtoMapper,ProfileDtoMapper profileDtoMapper){
 
         this.productService = productService;
         this.productDtoMapper = productDtoMapper;
+        this.profileDtoMapper = profileDtoMapper;
     }
 
     @GetMapping
@@ -45,7 +46,7 @@ public class RestProductController {
           
        
     }
-
+// Does not respect Rest principles. To refactor
     @PostMapping
     public ResponseEntity<ProductDto> createProduct(@RequestBody ProductDto product) {
     
@@ -59,6 +60,21 @@ public class RestProductController {
 
     
     }
+
+    // A reprendre
+
+
+
+    //  @PostMapping("/{productId}/resources")
+    // public ProductDto addResourceToProduct(@PathVariable Long productId, @RequestBody RessourceDto resource) {
+    //     return productService.addResourceToProduct(productId, resource);
+    // }
+
+    @PostMapping("/{productId}/profiles")
+    public ProductDto addProfileToProduct(@PathVariable Long productId, @RequestBody ProfileDto profile) {
+        return productDtoMapper.toDto(productService.addProfileToProduct(productId, profileDtoMapper.toDomain(profile)));
+    }
+
 
     @PutMapping("/{id}")
     public ProductDto updateProduct(@PathVariable Long id, @RequestBody ProductDto product) {

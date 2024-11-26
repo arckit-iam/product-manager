@@ -15,10 +15,8 @@ public class ApiExceptionHandler  {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
     }
 
-    @ExceptionHandler(ProductNotFoundException.class)
-    public ResponseEntity<String> handleResourceNotFoundException(ProductNotFoundException ex) {
-        // Créez une réponse d'erreur personnalisée avec le message d'exception
-   
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<String> handleResourceNotFoundException(NotFoundException ex) {   
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
 }
