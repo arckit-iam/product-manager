@@ -5,7 +5,6 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import vysion.profile.domain.model.Product;
 import vysion.profile.domain.model.Profile;
 import vysion.profile.domain.port.ProfileProvider;
 
@@ -13,17 +12,13 @@ import vysion.profile.domain.port.ProfileProvider;
 public class JpaProfileProvider implements ProfileProvider{
 
     private final JpaProfileRepository profileRepository;
-    private final JpaProductRepository productRepository;
     private final ProfileEntityMapper profileEntityMapper;
-    private final ProductEntityMapper productEntityMapper;
 
 
     @Autowired
-    public JpaProfileProvider(JpaProfileRepository profileRepository,JpaProductRepository productRepository,ProfileEntityMapper profileEntityMapper, ProductEntityMapper productEntityMapper) {
+    public JpaProfileProvider(JpaProfileRepository profileRepository,ProfileEntityMapper profileEntityMapper) {
         this.profileRepository = profileRepository;
-        this.productRepository = productRepository;
         this.profileEntityMapper = profileEntityMapper;
-        this.productEntityMapper = productEntityMapper;
     }
     @Override
     public Profile save(Profile profile,Long productId) {
@@ -36,11 +31,8 @@ public class JpaProfileProvider implements ProfileProvider{
     }
 
     @Override
-    public List<Profile> getProfilesByProduct(Product product) {
-        if(!productRepository.existsByName(product.getName())){
-            throw new NotFoundException("The product does not exist");
-        }
-        return profileEntityMapper.toDomainList(profileRepository.findAllByProduct(productEntityMapper.toEntity(product)));
+    public List<Profile> getProfilesByProduct(Long productId) {
+        return profileEntityMapper.toDomainList(profileRepository.findAllByProductId(productId));
     }
     
 }

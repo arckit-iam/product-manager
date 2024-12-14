@@ -61,10 +61,12 @@ public class HexaProductService implements ProductService {
     }
 
     @Override
-    public Product addProfileToProduct(Long productId, Profile profile) {       
-        profile.setProduct(productProvider.findById(productId));
+    public Product addProfileToProduct(Long productId, Profile profile) {    
         profileProvider.save(profile,productId);
-        return productProvider.findById(productId);
+        System.out.println("AAAAA   AAAAA   " + profileProvider.getProfilesByProduct(productId).toString());
+        var result = productProvider.findById(productId);
+        result.setProfiles(profileProvider.getProfilesByProduct(productId));
+        return result;
     }
     
 }
