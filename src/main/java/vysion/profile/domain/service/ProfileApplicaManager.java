@@ -7,7 +7,7 @@ import vysion.profile.domain.model.Product;
 import vysion.profile.domain.model.Profile;
 import vysion.profile.domain.model.Ressource;
 
-public interface ProductService {
+public interface ProfileApplicaManager {
     List<Product> getAllProducts();
     Product getProduct(Long id);
     Product createProduct(Product product) throws UniqueProductNameConstraintViolationException;
@@ -15,4 +15,5 @@ public interface ProductService {
     Product updateProduct(Long id, Product domain);
     Product addResourceToProduct(Long productId, Ressource resource);
     Product addProfileToProduct(Long productId, Profile profile);
+    Product deleteProfileToProduct(Long productId, Profile profile);
 }

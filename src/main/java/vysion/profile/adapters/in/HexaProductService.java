@@ -11,10 +11,10 @@ import vysion.profile.domain.model.Profile;
 import vysion.profile.domain.model.Ressource;
 import vysion.profile.domain.port.ProductProvider;
 import vysion.profile.domain.port.ProfileProvider;
-import vysion.profile.domain.service.ProductService;
+import vysion.profile.domain.service.ProfileApplicaManager;
 
 @Service
-public class HexaProductService implements ProductService {
+public class HexaProductService implements ProfileApplicaManager {
 
     private final ProductProvider productProvider;
     private final ProfileProvider profileProvider;
@@ -63,7 +63,6 @@ public class HexaProductService implements ProductService {
     @Override
     public Product addProfileToProduct(Long productId, Profile profile) {    
         profileProvider.save(profile,productId);
-        System.out.println("AAAAA   AAAAA   " + profileProvider.getProfilesByProduct(productId).toString());
         var result = productProvider.findById(productId);
         result.setProfiles(profileProvider.getProfilesByProduct(productId));
         return result;

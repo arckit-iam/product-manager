@@ -10,7 +10,6 @@ import lombok.Data;
 @Entity
 @Data
 @Table(name = "profile")
-
 public class ProfileEntity {
 
     @Id
@@ -23,8 +22,8 @@ public class ProfileEntity {
     private String name;
     private String description;
 
-    public ProfileEntity addId(Long id){
-        setId(id);
+    public ProfileEntity addProductId(Long id){
+        setProductId(id);
         return this;
     }
 

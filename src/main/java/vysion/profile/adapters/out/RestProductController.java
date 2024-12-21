@@ -17,18 +17,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import vysion.profile.domain.service.ProductService;
+import vysion.profile.domain.service.ProfileApplicaManager;
 
 @RestController
 @RequestMapping("/products")
 public class RestProductController {
 
 
-    private final ProductService productService;
+    private final ProfileApplicaManager productService;
     private final ProductDtoMapper productDtoMapper;
     private final ProfileDtoMapper profileDtoMapper;
     @Autowired
-    RestProductController(ProductService productService,ProductDtoMapper productDtoMapper,ProfileDtoMapper profileDtoMapper){
+    RestProductController(ProfileApplicaManager productService,ProductDtoMapper productDtoMapper,ProfileDtoMapper profileDtoMapper){
 
         this.productService = productService;
         this.productDtoMapper = productDtoMapper;

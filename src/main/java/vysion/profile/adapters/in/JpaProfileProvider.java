@@ -22,7 +22,7 @@ public class JpaProfileProvider implements ProfileProvider{
     }
     @Override
     public Profile save(Profile profile,Long productId) {
-        return profileEntityMapper.toDomain(profileRepository.saveAndFlush(profileEntityMapper.toEntity(profile).addId(productId)));
+        return profileEntityMapper.toDomain(profileRepository.saveAndFlush(profileEntityMapper.toEntity(profile).addProductId(productId)));
     }
 
     @Override
