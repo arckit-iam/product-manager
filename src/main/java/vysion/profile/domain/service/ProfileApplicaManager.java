@@ -10,10 +10,13 @@ import vysion.profile.domain.model.Ressource;
 public interface ProfileApplicaManager {
     List<Product> getAllProducts();
     Product getProduct(Long id);
+    Product getProduct(String productName);
     Product createProduct(Product product) throws UniqueProductNameConstraintViolationException;
     void deleteProduct(Long id);
+    void deleteProduct(String productName);
     Product updateProduct(Long id, Product domain);
-    Product addResourceToProduct(Long productId, Ressource resource);
-    Product addProfileToProduct(Long productId, Profile profile);
-    Product deleteProfileToProduct(Long productId, Profile profile);
+    Product updateProduct(String productName, Product domain);
+    Product addResourceToProduct(String productName, Ressource resource);
+    Product addProfileToProduct(String productName, Profile profile);
+    Product deleteProfileToProduct(String productName, Profile profile);
 }

@@ -5,6 +5,9 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import vysion.profile.domain.exception.ExistProductNameConstraintViolationException;
+import vysion.profile.domain.exception.NotFoundException;
+import vysion.profile.domain.exception.UnidentifiedException;
 import vysion.profile.domain.exception.UniqueProductNameConstraintViolationException;
 import vysion.profile.domain.model.Product;
 import vysion.profile.domain.model.Profile;
@@ -55,17 +58,63 @@ public class HexaProductService implements ProfileApplicaManager {
     }
 
     @Override
-    public Product addResourceToProduct(Long productId, Ressource resource) {
+    public Product addResourceToProduct(String productName, Ressource resource) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'addResourceToProduct'");
     }
 
     @Override
-    public Product addProfileToProduct(Long productId, Profile profile) {    
-        profileProvider.save(profile,productId);
-        var result = productProvider.findById(productId);
-        result.setProfiles(profileProvider.getProfilesByProduct(productId));
+    public Product addProfileToProduct(String productName, Profile profile) {   
+        profileProvider.save(profile,productName);
+        Product result = productProvider.findByProductName(productName);
+        result.setProfiles(profileProvider.getProfilesByProduct(productName));
         return result;
+    }
+
+    @Override
+    public Product deleteProfileToProduct(String productName, Profile profile) {
+        profileProvider.deleteProfile(profile);
+        Product result = productProvider.findByProductName(productName);
+        result.setProfiles(profileProvider.getProfilesByProduct(productName));
+        return result;
+      }
+
+    @Override
+    public Product getProduct(String productName) {
+       return productProvider.findByProductName(productName);
+    }
+
+    @Override
+    public void deleteProduct(String productName) {
+        if(!productProvider.existeByName(productName)){
+            throw new NotFoundException("The product's name does not exist");
+        }
+       try {
+        productProvider.deleteByName(productName);
+       } catch (Exception e) {
+           throw new UnidentifiedException("An unexpected error occurred");
+       }
+    }
+ 
+    @Override
+    public Product updateProduct(String productName, Product domain) {
+
+        if(!productProvider.existeByName(productName)){
+            throw new NotFoundException("The product does not exist");
+        }
+        if(!productProvider.existeByName(domain.getName())){
+            throw new ExistProductNameConstraintViolationException("Unhautorized request");
+        }
+        if(!productName.equals(domain.getName())){
+            throw new UniqueProductNameConstraintViolationException("Update failed, the product name can not be changed");
+        }
+        
+
+        try {
+            return productProvider.save(domain);
+        } catch (Exception e) {
+            throw new UnidentifiedException("An unexpected error occurred");
+        }
     }
     
 }

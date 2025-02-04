@@ -40,9 +40,9 @@ public class RestProductController {
         return ResponseEntity.ok(productDtoMapper.toDtoList(productService.getAllProducts()));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ProductDto> getProductById(@PathVariable Long id) {
-            return ResponseEntity.ok(productDtoMapper.toDto(productService.getProduct(id)));
+    @GetMapping("/{productName}")
+    public ResponseEntity<ProductDto> getProductById(@PathVariable String productName) {
+            return ResponseEntity.ok(productDtoMapper.toDto(productService.getProduct(productName)));
           
        
     }
@@ -53,7 +53,7 @@ public class RestProductController {
             ProductDto createdProduct =  productDtoMapper.toDto(productService.createProduct(productDtoMapper.toDomain(product)));
             URI location = ServletUriComponentsBuilder
             .fromCurrentRequest()
-            .path("/{id}")
+            .path("/{productName}")
             .buildAndExpand(createdProduct.getName())
             .toUri();
             return ResponseEntity.created(location).body(createdProduct);
@@ -70,19 +70,19 @@ public class RestProductController {
     //     return productService.addResourceToProduct(productId, resource);
     // }
 
-    @PostMapping("/{productId}/profiles")
-    public ProductDto addProfileToProduct(@PathVariable Long productId, @RequestBody ProfileDto profile) {
-        return productDtoMapper.toDto(productService.addProfileToProduct(productId, profileDtoMapper.toDomain(profile)));
+    @PostMapping("/{productName}/profiles")
+    public ProductDto addProfileToProduct(@PathVariable String productName, @RequestBody ProfileDto profile) {
+        return productDtoMapper.toDto(productService.addProfileToProduct(productName, profileDtoMapper.toDomain(profile)));
     }
 
 
-    @PutMapping("/{id}")
-    public ProductDto updateProduct(@PathVariable Long id, @RequestBody ProductDto product) {
-        return productDtoMapper.toDto(productService.updateProduct(id,productDtoMapper.toDomain(product)));
+    @PutMapping("/{productName}")
+    public ProductDto updateProduct(@PathVariable String productName, @RequestBody ProductDto product) {
+        return productDtoMapper.toDto(productService.updateProduct(productName,productDtoMapper.toDomain(product)));
     }
 
-    @DeleteMapping("/{id}")
-    public void deleteProduct(@PathVariable Long id) {
-        productService.deleteProduct(id);
+    @DeleteMapping("/{productName}")
+    public void deleteProduct(@PathVariable String productName) {
+        productService.deleteProduct(productName);
     }
 }

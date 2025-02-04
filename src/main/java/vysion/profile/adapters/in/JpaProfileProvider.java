@@ -13,26 +13,41 @@ public class JpaProfileProvider implements ProfileProvider{
 
     private final JpaProfileRepository profileRepository;
     private final ProfileEntityMapper profileEntityMapper;
+    private final JpaProductRepository productRepository;
 
 
     @Autowired
-    public JpaProfileProvider(JpaProfileRepository profileRepository,ProfileEntityMapper profileEntityMapper) {
+    public JpaProfileProvider(JpaProfileRepository profileRepository, ProfileEntityMapper profileEntityMapper, JpaProductRepository productRepository) {
         this.profileRepository = profileRepository;
         this.profileEntityMapper = profileEntityMapper;
+        this.productRepository = productRepository;
     }
     @Override
     public Profile save(Profile profile,Long productId) {
         return profileEntityMapper.toDomain(profileRepository.saveAndFlush(profileEntityMapper.toEntity(profile).addProductId(productId)));
     }
-
     @Override
-    public Profile getProfileById(Long id) {
-        return profileEntityMapper.toDomain(profileRepository.findById(id).orElseThrow(()-> new NotFoundException("The Profile does not exist")));
+    public Profile save(Profile profile,String productName) {
+        ProfileEntity profileEntity = profileEntityMapper.toEntity(profile);
+        profileEntity.setProductId(productRepository.findByName(productName).getId());
+        return profileEntityMapper.toDomain(profileRepository.saveAndFlush(profileEntity));
     }
 
+
+
     @Override
-    public List<Profile> getProfilesByProduct(Long productId) {
-        return profileEntityMapper.toDomainList(profileRepository.findAllByProductId(productId));
+    public void deleteProfile(Profile profile) {
+       
+        profileRepository.delete(profileEntityMapper.toEntity(profile));
+                
+    }
+    @Override
+    public Profile getProfileByNameAndProduct(String profileName, String productName) {
+        return profileEntityMapper.toDomain(profileRepository.findOneByNameAndProductId(profileName, productRepository.findByName(productName).getId()));
+    }
+    @Override
+    public List<Profile> getProfilesByProduct(String productName) {
+        return profileEntityMapper.toDomainList(profileRepository.findAllByProductId(productRepository.findByName(productName).getId()));   
     }
     
 }

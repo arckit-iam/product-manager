@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import vysion.profile.domain.exception.NotFoundException;
 import vysion.profile.domain.model.Product;
 import vysion.profile.domain.port.ProductProvider;
 
@@ -32,7 +33,11 @@ public class JpaProductProvider implements ProductProvider{
 
     @Override
     public Product save(Product product) {
-        return productEntityMapper.toDomain(productRepository.saveAndFlush(productEntityMapper.toEntity(product)));
+        ProductEntity productEntity = productEntityMapper.toEntity(product);
+        if(productRepository.existsByName(product.getName())){
+            productEntity.setId(productRepository.findIdByProductName(product.getName()));
+        }
+        return productEntityMapper.toDomain(productRepository.saveAndFlush(productEntity));
     }
     @Override
     public void deleteById(Long id) {
@@ -41,6 +46,15 @@ public class JpaProductProvider implements ProductProvider{
     @Override
     public boolean existeByName(String name) {
         return productRepository.existsByName(name);
+    }
+    @Override
+    public Product findByProductName(String name) {
+        return  productEntityMapper.toDomain(productRepository.findByName(name));
+    }
+
+    @Override
+    public void deleteByName(String name) {
+        productRepository.deleteById(productRepository.findIdByProductName(name));
     }
 
 

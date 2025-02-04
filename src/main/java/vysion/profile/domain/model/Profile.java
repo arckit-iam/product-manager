@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class Profile {
-    Long product;
+    String product;
     String name;
     String description;
 }
