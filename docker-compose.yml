@@ -1,0 +1,42 @@
+services:
+  applica-api:
+      build: .  # Construire l'image à partir du Dockerfile dans le dossier src
+      container_name: applica-api-container
+      ports:
+        - "8080:8080"
+      depends_on:
+        - applica-db  # Assurer que applica-db démarre avant applica-api
+      env_file:
+        - .env   # Chargé uniquement en local
+      environment:
+        - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}  # Défaut : dev
+        - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+        - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+        - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      networks:
+        - applica-net  # Connecter ce service au réseau applica-net
+  applica-db:
+    image: mysql
+    volumes:
+     - applica-data:/var/lib/mysql  # MySQL
+    container_name: applica-db-container
+    restart: always
+    env_file:
+        - .env   # Chargé uniquement en local
+    environment:
+      - MYSQL_ROOT_PASSWORD=${ROOT_DATASOURCE_PASSWORD}
+      - MYSQL_DATABASE=${SPRING_DATASOURCE_DATABASE}
+      - MYSQL_USER=${SPRING_DATASOURCE_USERNAME}
+      - MYSQL_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+    ports:
+      - "3306:3306"
+    networks:
+      - applica-net  # Connecter ce service au réseau applica-net
+
+volumes:
+  applica-data:  # Volume persistant pour SQL Server
+    driver: local  # Spécifie que c'est un volume local sur l'hôte  
+
+networks:
+  applica-net:
+    driver: bridge  # Utiliser le driver bridge pour le réseau
