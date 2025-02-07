@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import vysion.profile.domain.model.Product;
-import vysion.profile.domain.port.ProductProvider;
+import secop.ppm1.domain.model.Product;
+import secop.ppm1.domain.port.ProductProvider;
 
 
 
