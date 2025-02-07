@@ -1,11 +1,11 @@
 services:
-  applica-api:
+  ppm1-api:
       build: .  # Construire l'image à partir du Dockerfile dans le dossier src
-      container_name: applica-api-container
+      container_name: ppm1-api-container
       ports:
         - "8080:8080"
       depends_on:
-        - applica-db  # Assurer que applica-db démarre avant applica-api
+        - ppm1-db  # Assurer que ppm1-db démarre avant ppm1-api
       env_file:
         - .env   # Chargé uniquement en local
       environment:
@@ -14,12 +14,12 @@ services:
         - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
         - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       networks:
-        - applica-net  # Connecter ce service au réseau applica-net
-  applica-db:
+        - ppm1-net  # Connecter ce service au réseau ppm1-net
+  ppm1-db:
     image: mysql
     volumes:
-     - applica-data:/var/lib/mysql  # MySQL
-    container_name: applica-db-container
+     - ppm1-data:/var/lib/mysql  # MySQL
+    container_name: ppm1-db-container
     restart: always
     env_file:
         - .env   # Chargé uniquement en local
@@ -31,12 +31,12 @@ services:
     ports:
       - "3306:3306"
     networks:
-      - applica-net  # Connecter ce service au réseau applica-net
+      - ppm1-net  # Connecter ce service au réseau ppm1-net
 
 volumes:
-  applica-data:  # Volume persistant pour SQL Server
+  ppm1-data:  # Volume persistant pour SQL Server
     driver: local  # Spécifie que c'est un volume local sur l'hôte  
 
 networks:
-  applica-net:
+  ppm1-net:
     driver: bridge  # Utiliser le driver bridge pour le réseau
