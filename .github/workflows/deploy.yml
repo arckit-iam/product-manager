@@ -12,9 +12,9 @@ on:
         default: 'warning'
         type: choice
         options:
-        - info
-        - warning
-        - debug
+          - info
+          - warning
+          - debug
       tags:
         description: 'Test scenario tags'
         required: false
@@ -54,10 +54,15 @@ jobs:
           echo "SPRING_FLYWAY_URL=${{ vars.DATASOURCE_URL }}" >> .env
           echo "SPRING_FLYWAY_USER=${{ vars.DATASOURCE_USER }}" >> .env
           echo "SPRING_FLYWAY_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-          echo "SPRING_PROFILES_ACTIVE=${{ vars.ENVIRONMENT }}" >> .env
+          echo "SPRING_PROFILES_ACTIVE=${{ vars.ENVIRONMENT || 'default' }}" >> .env
 
       - name: Extract version from tag
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          else
+            echo "VERSION=latest" >> $GITHUB_ENV
+          fi
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -68,16 +73,19 @@ jobs:
 
       - name: Create ECR repository If not exists
         run: |
-          aws ecr describe-repositories --repository-names ${{ vars.ECR_REPOSITORY }} >/dev/null 2>&1 \ || aws ecr create-repository --repository-name ${{ vars.ECR_REPOSITORY }}
+          aws ecr describe-repositories --repository-names ${{ vars.ECR_REPOSITORY }} >/dev/null 2>&1 \
+          || aws ecr create-repository --repository-name ${{ vars.ECR_REPOSITORY }}
+
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ${{ vars.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
 
       - name: Build Docker image
         run: |
-        
-           docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY }}:latest .
+          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY }}:latest .
 
       - name: Push Docker image to Amazon ECR
         run: |
-          docker tag ${{ vars.ECR_REPOSITORY }}:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}1.amazonaws.com/${{ vars.ECR_REPOSITORY }}:latest
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY }}:latest
 
       - name: Deploy to ECS
