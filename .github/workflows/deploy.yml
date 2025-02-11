@@ -1,9 +1,9 @@
 name: Deploy to AWS
 
 on:
-  push:
-      tags:
-        - "[0-9]+.[0-9]+.[0-9]+"  # Déclenche seulement sur les tags x.y.z
+  # push:
+  #     tags:
+  #       - "[0-9]+.[0-9]+.[0-9]+"  # Déclenche seulement sur les tags x.y.z
   workflow_dispatch:
     inputs:
       logLevel:
