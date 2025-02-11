@@ -1,0 +1,42 @@
+services:
+  ppm1-api:
+      build: .  # Construire l'image à partir du Dockerfile dans le dossier src
+      container_name: ppm1-api-container
+      ports:
+        - "8080:8080"
+      depends_on:
+        - ppm1-db  # Assurer que ppm1-db démarre avant ppm1-api
+      env_file:
+        - .env   # Chargé uniquement en local
+      environment:
+        - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}  # Défaut : dev
+        - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+        - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+        - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      networks:
+        - ppm1-net  # Connecter ce service au réseau ppm1-net
+  ppm1-db:
+    image: mysql
+    volumes:
+     - ppm1-data:/var/lib/mysql  # MySQL
+    container_name: ppm1-db-container
+    restart: always
+    env_file:
+        - .env   # Chargé uniquement en local
+    environment:
+      - MYSQL_ROOT_PASSWORD=${ROOT_DATASOURCE_PASSWORD}
+      - MYSQL_DATABASE=${SPRING_DATASOURCE_DATABASE}
+      - MYSQL_USER=${SPRING_DATASOURCE_USERNAME}
+      - MYSQL_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+    ports:
+      - "3306:3306"
+    networks:
+      - ppm1-net  # Connecter ce service au réseau ppm1-net
+
+volumes:
+  ppm1-data:  # Volume persistant pour SQL Server
+    driver: local  # Spécifie que c'est un volume local sur l'hôte  
+
+networks:
+  ppm1-net:
+    driver: bridge  # Utiliser le driver bridge pour le réseau
