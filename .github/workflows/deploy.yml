@@ -1,6 +1,9 @@
 name: Deploy to AWS
 
 on:
+  push:
+      tags:
+        - "[0-9]+.[0-9]+.[0-9]+"  # Déclenche seulement sur les tags x.y.z
   workflow_dispatch:
     inputs:
       logLevel:
@@ -33,11 +36,7 @@ jobs:
           LEVEL: ${{ inputs.logLevel }}
           TAGS: ${{ inputs.tags }}
           ENVIRONMENT: ${{ inputs.environment }}
-  push:
-    tags:
-      - "[0-9]+.[0-9]+.[0-9]+"  # Déclenche seulement sur les tags x.y.z
-
-jobs:
+  
   deploy:
     runs-on: ubuntu-latest
     steps:
