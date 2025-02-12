@@ -1,4 +1,4 @@
-name: Deploy to AWS
+name: ppm1-pipeline
 
 on:
   # push:
@@ -20,12 +20,13 @@ on:
         required: false
         type: boolean
       environment:
-        description: 'Environment to run tests against'
-        type: environment
-        required: true
+        description: 'Environment'
+        required: false
+        default: 'dev'
+        type: string
 
 jobs:
-  log-the-inputs:
+  start-pipeline:
     runs-on: ubuntu-latest
     steps:
       - run: |
@@ -37,7 +38,7 @@ jobs:
           TAGS: ${{ inputs.tags }}
           ENVIRONMENT: ${{ inputs.environment }}
   
-  deploy:
+  build-service:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -88,6 +89,7 @@ jobs:
         run: |
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY }}:latest
 
+  deploy-service:
       - name: Deploy to ECS
         run: |
           aws ecs update-service --cluster my-cluster --service my-service --force-new-deployment
