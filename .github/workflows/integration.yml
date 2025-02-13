@@ -1,6 +1,5 @@
 name: ppm1-integration
 
-
 on:
   push:
       tags:
@@ -45,19 +44,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Create .env file
-        run: |
-          echo "SPRING_DATASOURCE_URL=${{ vars.DATASOURCE_URL }}" >> .env
-          echo "SPRING_DATASOURCE_USERNAME=${{ vars.DATASOURCE_USER }}" >> .env
-          echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-          echo "ROOT_DATASOURCE_PASSWORD=${{ secrets.ROOT_DB_PASSWORD }}" >> .env
-          echo "SPRING_SECURITY_USER_NAME=${{ vars.ECR_REPOSITORY }}" >> .env
-          echo "SPRING_SECURITY_USER_PASSWORD=${{ secrets.API_SECURITY_ACCESS }}" >> .env
-          echo "SPRING_FLYWAY_URL=${{ vars.DATASOURCE_URL }}" >> .env
-          echo "SPRING_FLYWAY_USER=${{ vars.DATASOURCE_USER }}" >> .env
-          echo "SPRING_FLYWAY_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-          echo "SPRING_PROFILES_ACTIVE=${{ vars.ENVIRONMENT || 'default' }}" >> .env
-
       - name: Extract version from tag
         run: |
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
@@ -75,8 +61,8 @@ jobs:
 
       - name: Create ECR repository If not exists
         run: |
-          aws ecr describe-repositories --repository-names ${{ vars.ECR_REPOSITORY }} >/dev/null 2>&1 \
-          || aws ecr create-repository --repository-name ${{ vars.ECR_REPOSITORY }}
+          aws ecr describe-repositories --repository-names ${{ vars.ECR_REPOSITORY_API }} >/dev/null 2>&1 \
+          || aws ecr create-repository --repository-name ${{ vars.ECR_REPOSITORY_API }}
 
       - name: Login to Amazon ECR
         run: |
@@ -88,8 +74,10 @@ jobs:
 
       - name: Tag Docker image
         run: |
-          docker tag ppm1:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY }}:latest
-
+          docker tag ppm1:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY_API }}:latest
+      
       - name: Push Docker image
         run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY }}:latest
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY_API }}:latest
+
+
