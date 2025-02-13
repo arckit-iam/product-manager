@@ -77,8 +77,6 @@ jobs:
         run: |
           aws ecr describe-repositories --repository-names ${{ vars.ECR_REPOSITORY_API }} >/dev/null 2>&1 \
           || aws ecr create-repository --repository-name ${{ vars.ECR_REPOSITORY_API }}
-          aws ecr describe-repositories --repository-names ${{ vars.ECR_REPOSITORY_DB }} >/dev/null 2>&1 \
-          || aws ecr create-repository --repository-name ${{ vars.ECR_REPOSITORY_DB }}
 
       - name: Login to Amazon ECR
         run: |
@@ -86,14 +84,12 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker-compose build
+          docker build -t ${{ vars.ECR_REPOSITORY_API }}:latest .
 
       - name: Tag Docker image
         run: |
           docker tag ppm1:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY_API }}:latest
-          docker tag ppm1:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY_DB }}:latest
       - name: Push Docker image
         run: |
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY_API }}:latest
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY_DB }}:latest
        
