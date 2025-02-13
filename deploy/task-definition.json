@@ -1,0 +1,52 @@
+{
+    "family": "ppm1-task",
+    "executionRoleArn": "arn:aws:iam::${AWS_ACCOUNT_ID}:role/ecsTaskExecutionRole",
+    "containerDefinitions": [
+      {
+        "name": "ppm1-container",
+        "image": "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY_API}:latest",
+        "memory": 512,
+        "cpu": 256,
+        "essential": true,
+        "environment": [
+          { "name": "SPRING_DATASOURCE_URL", "value": "arn:aws:ssm:${AWS_REGION}:${AWS_ACCOUNT_ID}:parameter/ppm1/DATASOURCE_URL" },
+          { "name": "SPRING_DATASOURCE_USERNAME", "value": "arn:aws:ssm:${AWS_REGION}:${AWS_ACCOUNT_ID}:parameter/ppm1/DATASOURCE_USER" },
+          { "name": "SPRING_SECURITY_USER_NAME", "value": "arn:aws:ssm:${AWS_REGION}:${AWS_ACCOUNT_ID}:parameter/ppm1/ECR_REPOSITORY" },
+          { "name": "SPRING_FLYWAY_URL", "value": "arn:aws:ssm:${AWS_REGION}:${AWS_ACCOUNT_ID}:parameter/ppm1/DATASOURCE_URL" },
+          { "name": "SPRING_FLYWAY_USER", "value": "arn:aws:ssm:${AWS_REGION}:${AWS_ACCOUNT_ID}:parameter/ppm1/DATASOURCE_USER" },
+          { "name": "SPRING_PROFILES_ACTIVE", "value": "arn:aws:ssm:${AWS_REGION}:${AWS_ACCOUNT_ID}:parameter/ppm1/ENVIRONMENT" }
+        ],
+        "secrets": [
+            {
+              "name": "SPRING_DATASOURCE_PASSWORD",
+              "valueFrom": "arn:aws:ssm:${AWS_REGION}:${AWS_ACCOUNT_ID}:parameter/ppm1/DB_PASSWORD"
+            },
+            {
+              "name": "ROOT_DATASOURCE_PASSWORD",
+              "valueFrom": "arn:aws:ssm:${AWS_REGION}:${AWS_ACCOUNT_ID}:parameter/ppm1/ROOT_DB_PASSWORD"
+            },
+            {
+              "name": "SPRING_SECURITY_USER_PASSWORD",
+              "valueFrom": "arn:aws:ssm:${AWS_REGION}:${AWS_ACCOUNT_ID}:parameter/ppm1/API_SECURITY_ACCESS"
+            },
+            {
+              "name": "SPRING_FLYWAY_PASSWORD",
+              "valueFrom": "arn:aws:ssm:${AWS_REGION}:${AWS_ACCOUNT_ID}:parameter/ppm1/DB_PASSWORD"
+            }
+        ],
+        "logConfiguration": {
+          "logDriver": "awslogs",
+          "options": {
+            "awslogs-group": "/ecs/ppm1",
+            "awslogs-region": "${AWS_REGION}",
+            "awslogs-stream-prefix": "ecs"
+          }
+        }
+      }
+    ],
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": ["FARGATE"],
+    "cpu": "256",
+    "memory": "512"
+  }
+  
