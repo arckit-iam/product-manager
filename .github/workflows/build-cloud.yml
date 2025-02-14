@@ -1,4 +1,4 @@
-name: ppm1-secret-management
+name: ppm1-build-infrastructure
 
 on:
   workflow_dispatch:
@@ -64,5 +64,12 @@ jobs:
             aws ssm put-parameter --name "/ppm1/ROOT_DB_PASSWORD" --value ${{ secrets.ROOT_DB_PASSWORD }} --type "SecureString" --region ${{ vars.AWS_REGION }}
             aws ssm put-parameter --name "/ppm1/API_SECURITY_ACCESS" --value ${{ secrets.API_SECURITY_ACCESS }} --type "SecureString" --region ${{ vars.AWS_REGION }}
             aws ssm put-parameter --name "/ppm1/SPRING_PROFILES_ACTIVE" --value ${{ inputs.environment }} --type "String" --region ${{ vars.AWS_REGION }}
-
-   
+    - name: Login to Amazon ECR
+      run: |
+        aws ecr get-login-password --region ${{ vars.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
+    - name: Inject environment variables into task definition
+      run: |
+        envsubst < deploy/task-definition.json > deploy/task-definition-updated.json
+    - name: Register Task Definition
+      run: |
+        aws ecs register-task-definition --cli-input-json file://deploy/task-definition-updated.json

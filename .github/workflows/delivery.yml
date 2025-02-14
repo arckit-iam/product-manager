@@ -47,16 +47,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        run: |
-          aws ecr get-login-password --region ${{ vars.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
-      - name: Inject environment variables into task definition
-        run: |
-          envsubst < deploy/task-definition.json > deploy/task-definition-updated.json
-      - name: Register Task Definition
-        run: |
-             aws ecs register-task-definition --cli-input-json file://deploy/task-definition-updated.json
       - name: Deploy to ECS
         run: |
           aws ecs update-service --cluster ${{ vars.AWS_CLUSTER }} --service my-service --force-new-deployment
