@@ -1,0 +1,91 @@
+name: ppm1-build-infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+          - info
+          - warning
+          - debug
+      tags:
+        description: 'Test scenario tags'
+        required: false
+        type: boolean
+      environment:
+        description: 'Environment'
+        required: false
+        default: 'dev'
+        type: string
+
+jobs:
+  start-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "Log level: $LEVEL"
+          echo "Tags: $TAGS"
+          echo "Environment: $ENVIRONMENT"
+        env:
+          LEVEL: ${{ inputs.logLevel }}
+          TAGS: ${{ inputs.tags }}
+          ENVIRONMENT: ${{ inputs.environment }}
+  
+  secret-management-service:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ vars.AWS_REGION }}
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Delete secrets if exists
+      run: |
+            aws ssm delete-parameter --name "/ppm1/DATASOURCE_URL" --region ${{ vars.AWS_REGION }} || true
+            aws ssm delete-parameter --name "/ppm1/DATASOURCE_USER" --region ${{ vars.AWS_REGION }} || true
+            aws ssm delete-parameter --name "/ppm1/DB_PASSWORD" --region ${{ vars.AWS_REGION }} || true
+            aws ssm delete-parameter --name "/ppm1/ROOT_DB_PASSWORD" --region ${{ vars.AWS_REGION }} || true
+            aws ssm delete-parameter --name "/ppm1/API_SECURITY_ACCESS" --region ${{ vars.AWS_REGION }} || true
+            aws ssm delete-parameter --name "/ppm1/SPRING_PROFILES_ACTIVE" --region ${{ vars.AWS_REGION }} || true
+    - name: Store secrets in AWS SSM
+      run: |
+            aws ssm put-parameter --name "/ppm1/DATASOURCE_URL" --value "${{ vars.DATASOURCE_URL }}" --type "String" --region ${{ vars.AWS_REGION }}
+            aws ssm put-parameter --name "/ppm1/DATASOURCE_USER" --value ${{ vars.DATASOURCE_USER }} --type "String" --region ${{ vars.AWS_REGION }}
+            aws ssm put-parameter --name "/ppm1/DB_PASSWORD" --value ${{ secrets.DB_PASSWORD }} --type "SecureString" --region ${{ vars.AWS_REGION }}
+            aws ssm put-parameter --name "/ppm1/ROOT_DB_PASSWORD" --value ${{ secrets.ROOT_DB_PASSWORD }} --type "SecureString" --region ${{ vars.AWS_REGION }}
+            aws ssm put-parameter --name "/ppm1/API_SECURITY_ACCESS" --value ${{ secrets.API_SECURITY_ACCESS }} --type "SecureString" --region ${{ vars.AWS_REGION }}
+            aws ssm put-parameter --name "/ppm1/SPRING_PROFILES_ACTIVE" --value ${{ inputs.environment }} --type "String" --region ${{ vars.AWS_REGION }}
+    - name: Login to Amazon ECR
+      run: |
+        aws ecr get-login-password --region ${{ vars.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
+    - name: Inject environment variables into task definition
+      run: |
+        envsubst < deploy/task-definition.json > deploy/task-definition-updated.json
+    - name: Register Task Definition
+      run: |
+        aws ecs register-task-definition --cli-input-json file://deploy/task-definition-updated.json
+    - name: Create ECR repository If not exists
+      run: |
+          aws ecr describe-repositories --repository-names ${{ vars.ECR_REPOSITORY_API }} >/dev/null 2>&1 \
+          || aws ecr create-repository --repository-name ${{ vars.ECR_REPOSITORY_API }}
+    - name : Create cluster if not Exist
+    
+      run: |
+        aws ecs describe-clusters --clusters ${{ vars.AWS_CLUSTER }} >/dev/null 2>&1 \
+        || aws ecs create-cluster --cluster-name ${{ vars.AWS_CLUSTER }} --region ${{ vars.AWS_REGION }}
+    - name: Create Service if not Exist or update task definition
+      run: |
+        aws ecs describe-services --cluster ${{ vars.AWS_CLUSTER }} --services ${{ vars.AWS_SERVICE }} --region ${{ vars.AWS_REGION }} >/dev/null 2>&1 \
+        && aws ecs update-service --cluster ${{ vars.AWS_CLUSTER }} --service ${{ vars.AWS_SERVICE }}  --force-new-deployment --region ${{ vars.AWS_REGION }} \
+        || aws ecs create-service --cluster ${{ vars.AWS_CLUSTER }} --service-name ${{ vars.AWS_SERVICE }} --task-definition ${{ vars.TASK_DEFINITION }} --desired-count 1 --launch-type EC2 --region ${{ vars.AWS_REGION }}
+
+
