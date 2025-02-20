@@ -22,4 +22,4 @@ RUN mvn package -DskipTests
 EXPOSE 8080
 
 # Démarrer l'application
-CMD ["java", "-jar", "target/profile-0.0.1-SNAPSHOT.jar"]
+CMD ["java", "-jar", "target/ppm1-0.0.1-SNAPSHOT.jar"]
