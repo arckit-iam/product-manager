@@ -1,28 +1,38 @@
 services:
   ppm1-api:
-      build: .  # Construire l'image à partir du Dockerfile dans le dossier src
+      image: ${GHCR_REGISTRY_URL}/ppm1:latest  # Image depuis GitHub Container Registry
       container_name: ppm1-api-container
       ports:
         - "8080:8080"
       depends_on:
-        - ppm1-db  # Assurer que ppm1-db démarre avant ppm1-api
+        ppm1-db:
+          condition: service_healthy
       env_file:
         - .env   # Chargé uniquement en local
       environment:
-        - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}  # Défaut : dev
+        - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
         - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
         - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
         - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+        - SPRING_FLYWAY_ENABLED=${SPRING_FLYWAY_ENABLED:-true}
+      restart: unless-stopped
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+        start_period: 60s
       networks:
-        - ppm1-net  # Connecter ce service au réseau ppm1-net
+        - ppm1-net
+        
   ppm1-db:
-    image: mysql
+    image: mysql:8.0
     volumes:
-     - ppm1-data:/var/lib/mysql  # MySQL
+     - ppm1-data:/var/lib/mysql
     container_name: ppm1-db-container
-    restart: always
+    restart: unless-stopped
     env_file:
-        - .env   # Chargé uniquement en local
+        - .env
     environment:
       - MYSQL_ROOT_PASSWORD=${ROOT_DATASOURCE_PASSWORD}
       - MYSQL_DATABASE=${SPRING_DATASOURCE_DATABASE}
@@ -30,13 +40,19 @@ services:
       - MYSQL_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
     ports:
       - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${ROOT_DATASOURCE_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
-      - ppm1-net  # Connecter ce service au réseau ppm1-net
+      - ppm1-net
 
 volumes:
-  ppm1-data:  # Volume persistant pour SQL Server
-    driver: local  # Spécifie que c'est un volume local sur l'hôte  
+  ppm1-data:
+    driver: local
 
 networks:
   ppm1-net:
-    driver: bridge  # Utiliser le driver bridge pour le réseau
+    driver: bridge
