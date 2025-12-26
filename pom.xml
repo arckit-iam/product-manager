@@ -129,6 +129,13 @@
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>0.8.11</version>
+				<configuration>
+					<excludes>
+						<!-- Exclure les classes générées automatiquement par MapStruct -->
+						<exclude>**/*MapperImpl.class</exclude>
+						<exclude>**/*Impl_.class</exclude>
+					</excludes>
+				</configuration>
 				<executions>
 					<execution>
 						<goals>
@@ -141,6 +148,13 @@
 						<goals>
 							<goal>report</goal>
 						</goals>
+						<configuration>
+							<excludes>
+								<!-- Exclure les classes générées automatiquement par MapStruct -->
+								<exclude>**/*MapperImpl.class</exclude>
+								<exclude>**/*Impl_.class</exclude>
+							</excludes>
+						</configuration>
 					</execution>
 					<execution>
 						<id>check</id>

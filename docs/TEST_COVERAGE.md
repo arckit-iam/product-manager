@@ -14,6 +14,19 @@ Le plugin JaCoCo est configuré dans `pom.xml` pour :
 - **Générer des rapports** en formats HTML, XML et CSV
 - **Vérifier les seuils** de couverture minimum
 - **Intégrer avec les workflows CI/CD**
+- **Exclure les classes générées** automatiquement (MapStruct)
+
+### Classes exclues de la couverture
+
+Les classes suivantes sont automatiquement exclues :
+- **`*MapperImpl.class`** : Classes générées par MapStruct
+- **`*Impl_.class`** : Classes d'implémentation générées
+
+> 💡 **Pourquoi exclure les MapperImpl ?**
+> Ces classes sont générées automatiquement par MapStruct et ne contiennent que du code généré. Les tester n'apporte aucune valeur car :
+> - Le code est généré par un framework mature et testé
+> - Les erreurs potentielles viennent de la configuration des mappers, pas de l'implémentation
+> - Cela permet de se concentrer sur le code métier vraiment important
 
 ```xml
 <plugin>
