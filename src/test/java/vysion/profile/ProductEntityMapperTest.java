@@ -9,8 +9,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
-import secop.ppm1.adapters.in.ProductEntity;
-import secop.ppm1.adapters.in.ProductEntityMapper;
+import secop.ppm1.adapters.provide.ProductEntity;
+import secop.ppm1.adapters.provide.ProductEntityMapper;
 import secop.ppm1.domain.model.Product;
 
 public class ProductEntityMapperTest {

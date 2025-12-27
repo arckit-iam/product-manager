@@ -1,4 +1,4 @@
-package secop.ppm1.adapters.in;
+package secop.ppm1.adapters.provide;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

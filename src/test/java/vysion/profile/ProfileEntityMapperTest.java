@@ -9,8 +9,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
-import secop.ppm1.adapters.in.ProfileEntity;
-import secop.ppm1.adapters.in.ProfileEntityMapper;
+import secop.ppm1.adapters.provide.ProfileEntity;
+import secop.ppm1.adapters.provide.ProfileEntityMapper;
 import secop.ppm1.domain.model.Profile;
 
 public class ProfileEntityMapperTest {

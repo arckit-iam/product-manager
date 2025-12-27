@@ -13,7 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import secop.ppm1.adapters.in.HexaProductService;
+import secop.ppm1.adapters.provide.HexaProductService;
 import secop.ppm1.domain.exception.ExistProductNameConstraintViolationException;
 import secop.ppm1.domain.exception.NotFoundException;
 import secop.ppm1.domain.exception.UniqueProductNameConstraintViolationException;

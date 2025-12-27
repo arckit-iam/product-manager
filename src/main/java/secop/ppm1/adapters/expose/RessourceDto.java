@@ -1,7 +1,7 @@
-package secop.ppm1.adapters.out;
+package secop.ppm1.adapters.expose;
 
-import secop.ppm1.adapters.in.ProductEntity;
-import secop.ppm1.adapters.in.RessourceTypeEntity;
+import secop.ppm1.adapters.provide.ProductEntity;
+import secop.ppm1.adapters.provide.RessourceTypeEntity;
 
 public class RessourceDto {
     String name;

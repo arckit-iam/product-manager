@@ -13,12 +13,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import secop.ppm1.adapters.in.JpaProfileProvider;
-import secop.ppm1.adapters.in.JpaProfileRepository;
-import secop.ppm1.adapters.in.JpaProductRepository;
-import secop.ppm1.adapters.in.ProductEntity;
-import secop.ppm1.adapters.in.ProfileEntity;
-import secop.ppm1.adapters.in.ProfileEntityMapper;
+import secop.ppm1.adapters.provide.JpaProfileProvider;
+import secop.ppm1.adapters.provide.JpaProfileRepository;
+import secop.ppm1.adapters.provide.JpaProductRepository;
+import secop.ppm1.adapters.provide.ProductEntity;
+import secop.ppm1.adapters.provide.ProfileEntity;
+import secop.ppm1.adapters.provide.ProfileEntityMapper;
 import secop.ppm1.domain.model.Profile;
 
 public class JpaProfileProviderTest {

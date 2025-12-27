@@ -14,10 +14,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import secop.ppm1.adapters.in.JpaProductProvider;
-import secop.ppm1.adapters.in.JpaProductRepository;
-import secop.ppm1.adapters.in.ProductEntity;
-import secop.ppm1.adapters.in.ProductEntityMapper;
+import secop.ppm1.adapters.provide.JpaProductProvider;
+import secop.ppm1.adapters.provide.JpaProductRepository;
+import secop.ppm1.adapters.provide.ProductEntity;
+import secop.ppm1.adapters.provide.ProductEntityMapper;
 import secop.ppm1.domain.exception.NotFoundException;
 import secop.ppm1.domain.model.Product;
 

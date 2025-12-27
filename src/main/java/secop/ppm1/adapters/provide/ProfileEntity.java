@@ -1,4 +1,4 @@
-package secop.ppm1.adapters.in;
+package secop.ppm1.adapters.provide;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

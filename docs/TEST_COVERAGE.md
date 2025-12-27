@@ -160,8 +160,8 @@ file:///path/to/project/target/site/jacoco/index.html
 ### Classes à Prioriser
 
 1. **Classes métier** (`domain.service.*`) → Couverture ≥ 90%
-2. **Logique applicative** (`adapters.in.*`) → Couverture ≥ 85%
-3. **Controllers REST** (`adapters.out.*`) → Couverture ≥ 80%
+2. **Logique applicative** (`adapters.provide.*`) → Couverture ≥ 85%
+3. **Controllers REST** (`adapters.expose.*`) → Couverture ≥ 80%
 4. **Entités/DTOs** → Couverture ≥ 70%
 
 ### Classes à Exclure

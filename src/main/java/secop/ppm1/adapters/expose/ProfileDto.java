@@ -1,4 +1,4 @@
-package secop.ppm1.adapters.out;
+package secop.ppm1.adapters.expose;
 
 import lombok.Data;
 

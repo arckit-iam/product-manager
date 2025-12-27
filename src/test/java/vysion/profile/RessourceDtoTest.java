@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
-import secop.ppm1.adapters.out.RessourceDto;
+import secop.ppm1.adapters.expose.RessourceDto;
 
 public class RessourceDtoTest {
 

@@ -29,11 +29,11 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import secop.ppm1.adapters.out.ProductDto;
-import secop.ppm1.adapters.out.ProductDtoMapper;
-import secop.ppm1.adapters.out.ProfileDto;
-import secop.ppm1.adapters.out.ProfileDtoMapper;
-import secop.ppm1.adapters.out.RestProductController;
+import secop.ppm1.adapters.expose.ProductDto;
+import secop.ppm1.adapters.expose.ProductDtoMapper;
+import secop.ppm1.adapters.expose.ProfileDto;
+import secop.ppm1.adapters.expose.ProfileDtoMapper;
+import secop.ppm1.adapters.expose.RestProductController;
 import secop.ppm1.domain.model.Product;
 import secop.ppm1.domain.model.Profile;
 import secop.ppm1.domain.service.ProfileApplicaManager;
