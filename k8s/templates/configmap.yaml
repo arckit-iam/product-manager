@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: product-manager-config
+  namespace: {{ .Release.Namespace }}
+data:
+  SPRING_PROFILES_ACTIVE: "prod"
+  SPRING_DATASOURCE_URL: "{{ .Values.database.url }}"
+  SPRING_DATASOURCE_USERNAME: "{{ .Values.database.username }}"
+  SPRING_DATASOURCE_DRIVER_CLASS_NAME: "org.postgresql.Driver"
+  SPRING_FLYWAY_URL: "{{ .Values.database.url }}"
+  SPRING_FLYWAY_USER: "{{ .Values.database.username }}"
+  SPRING_FLYWAY_ENABLED: "true"
+  SPRING_JPA_SHOW_SQL: "false"
+  SERVER_PORT: "{{ .Values.server.port }}"

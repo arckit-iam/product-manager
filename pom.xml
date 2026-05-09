@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>secop</groupId>
-	<artifactId>ppm1</artifactId>
+	<artifactId>product-manager</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>ppm1</name>
-	<description>Ressources and permissions management</description>
+	<name>product-manager</name>
+	<description>Product Manager — Ressources and permissions management</description>
 	<url/>
 	<licenses>
 		<license/>

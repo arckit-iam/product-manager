@@ -1,0 +1,64 @@
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "Version de l'image Docker à déployer"
+        required: true
+        type: string
+      env_name:
+        description: "Nom de l'environnement GitHub"
+        required: false
+        type: string
+        default: "prod"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version de l'image Docker à déployer"
+        required: true
+        type: string
+      env_name:
+        description: "Nom de l'environnement GitHub"
+        required: false
+        type: string
+        default: "prod"
+
+jobs:
+  deploy:
+    environment: ${{ inputs.env_name }}
+    runs-on: [self-hosted, product-manager]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Write kubeconfig to file
+        run: echo "${{ secrets.KUBECONFIG }}" > kubeconfig.yaml
+
+      - name: Create or update PostgreSQL secret
+        env:
+          KUBECONFIG: ${{ github.workspace }}/kubeconfig.yaml
+        run: |
+          kubectl create secret generic product-manager-db-secret \
+            --from-literal=username=product_manager \
+            --from-literal=password=${{ secrets.PRODUCT_MANAGER_DB_PASSWORD }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Create or update API security secret
+        env:
+          KUBECONFIG: ${{ github.workspace }}/kubeconfig.yaml
+        run: |
+          kubectl create secret generic product-manager-api-secret \
+            --from-literal=username=${{ secrets.PRODUCT_MANAGER_SECURITY_USER }} \
+            --from-literal=password=${{ secrets.PRODUCT_MANAGER_SECURITY_PASSWORD }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Apply all FluxCD manifests (k8s/flux)
+        env:
+          KUBECONFIG: ${{ github.workspace }}/kubeconfig.yaml
+        run: |
+          kubectl apply -f k8s/flux/
+
+      - name: Clean up kubeconfig
+        if: always()
+        run: rm -f kubeconfig.yaml

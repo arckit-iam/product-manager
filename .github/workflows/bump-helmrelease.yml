@@ -1,0 +1,36 @@
+name: Bump HelmRelease tag
+
+on:
+  workflow_dispatch:
+  release:
+    types: [released]
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Bump HelmRelease tag
+        run: |
+          sed -i "s/tag: \".*\"/tag: \"${{ steps.version.outputs.VERSION }}\"/" k8s/flux/product-manager-helmrelease.yaml
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore(gitops): bump HelmRelease tag to ${{ steps.version.outputs.VERSION }}"
+          title: "chore(gitops): bump HelmRelease tag to ${{ steps.version.outputs.VERSION }}"
+          body: "Automated PR to deploy version ${{ steps.version.outputs.VERSION }} via FluxCD."
+          branch: bump-helmrelease-${{ steps.version.outputs.VERSION }}
+          base: main
