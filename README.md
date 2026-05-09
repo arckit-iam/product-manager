@@ -259,4 +259,5 @@ Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de 
 
 ---
 
-**Développé avec ❤️ par l'équipe PPM1**
+**Développé avec ❤️ par l'équipe PPM1**#   p r o d u c t - m a n a g e r  
+ 
