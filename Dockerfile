@@ -1,25 +1,22 @@
+# ── Build stage ─────────────────────────────────────────────────────────────────
+FROM eclipse-temurin:25-jdk-noble AS build
 
-# Utiliser une image de base officielle de Java 21
-FROM eclipse-temurin:21-jdk-alpine
-
-# Installer Maven
-RUN apk update && apk add --no-cache maven
-
-# Définir le répertoire de travail dans le conteneur
-WORKDIR /app
-
-# Copier le fichier pom.xml et télécharger les dépendances
+WORKDIR /build
 COPY pom.xml .
-RUN mvn dependency:go-offline -B
-
-# Copier le reste du code source
 COPY src ./src
 
-# Compiler le projet
-RUN mvn package -DskipTests
+RUN apt-get update -qq && apt-get install -y -qq maven \
+ && mvn package -q -DskipTests \
+ && mv target/product-manager-*.jar target/product-manager.jar
 
-# Exposer le port sur lequel l'application s'exécute
+# ── Runtime stage ────────────────────────────────────────────────────────────────
+FROM eclipse-temurin:25-jre-noble
+
+RUN useradd -r appuser
+USER appuser
+
+WORKDIR /app
+COPY --from=build /build/target/product-manager.jar product-manager.jar
+
 EXPOSE 8080
-
-# Démarrer l'application
-CMD ["java", "-jar", "target/product-manager-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java", "-jar", "product-manager.jar"]
