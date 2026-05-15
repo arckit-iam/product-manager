@@ -11,7 +11,13 @@ import secop.ppm1.ProfileApplication;
     "spring.datasource.driver-class-name=org.h2.Driver",
     "spring.datasource.username=sa",
     "spring.datasource.password=",
-    "spring.jpa.hibernate.ddl-auto=create-drop"
+    "spring.jpa.hibernate.ddl-auto=create-drop",
+    "spring.flyway.enabled=false",
+    "spring.jpa.show-sql=false",
+    "spring.security.user.name=test",
+    "spring.security.user.password=test",
+    "logging.level.org.springframework.security=INFO",
+    "logging.level.org.hibernate.SQL=INFO"
 })
 class ProfileApplicationTests {
 

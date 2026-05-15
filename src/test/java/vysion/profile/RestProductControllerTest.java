@@ -40,7 +40,11 @@ import secop.ppm1.domain.service.ProfileApplicaManager;
 import secop.ppm1.ProfileApplication;
 
 @WebMvcTest(value = RestProductController.class, 
-            properties = "spring.main.allow-bean-definition-overriding=true")
+            properties = {
+                "spring.main.allow-bean-definition-overriding=true",
+                "logging.level.org.springframework.security=INFO",
+                "logging.level.org.hibernate.SQL=INFO"
+            })
 @ContextConfiguration(classes = {RestProductController.class})
 public class RestProductControllerTest {
 
