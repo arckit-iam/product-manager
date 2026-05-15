@@ -17,14 +17,17 @@ public class ArcPublisherJobAdapter implements JobPublisher {
 
     private final RestClient restClient;
     private final String targetSystem;
+    private final String source;
 
     public ArcPublisherJobAdapter(
             @Value("${arc.publisher.url}") String arcPublisherUrl,
-            @Value("${arc.publisher.target-system}") String targetSystem) {
+            @Value("${arc.publisher.target-system}") String targetSystem,
+            @Value("${arc.publisher.source}") String source) {
         this.restClient = RestClient.builder()
                 .baseUrl(arcPublisherUrl)
                 .build();
         this.targetSystem = targetSystem;
+        this.source = source;
     }
 
     @Override
@@ -52,6 +55,7 @@ public class ArcPublisherJobAdapter implements JobPublisher {
         request.setEntitlementId(profile.getName());
         request.setEntitlementName(profile.getDescription() != null ? profile.getDescription() : profile.getName());
         request.setScope(profile.getScope());
+        request.setSource(source);
         request.setExecuteAt(OffsetDateTime.now());
         request.setCorrelationId(UUID.randomUUID().toString());
 

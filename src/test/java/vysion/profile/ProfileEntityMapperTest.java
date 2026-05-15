@@ -27,12 +27,14 @@ public class ProfileEntityMapperTest {
         profile.setName("Test Profile");
         profile.setProduct("Test Product");
         profile.setDescription("Test Description");
+        profile.setScope("TIER1");
 
         profileEntity = new ProfileEntity();
         profileEntity.setId(1L);
         profileEntity.setName("Test Profile");
         profileEntity.setProductId(1L);
         profileEntity.setDescription("Test Description");
+        profileEntity.setScope("TIER1");
     }
 
     @Test
@@ -42,8 +44,8 @@ public class ProfileEntityMapperTest {
         assertNotNull(result);
         assertEquals("Test Profile", result.getName());
         assertEquals("Test Description", result.getDescription());
+        assertEquals("TIER1", result.getScope());
         // Note: Le mapping de productId vers product n'est pas automatique avec MapStruct
-        // Il faudrait une méthode de mapping personnalisée pour cela
     }
 
     @Test
@@ -60,6 +62,7 @@ public class ProfileEntityMapperTest {
         assertNull(result.getId()); // ID est ignoré lors du mapping
         assertEquals("Test Profile", result.getName());
         assertEquals("Test Description", result.getDescription());
+        assertEquals("TIER1", result.getScope());
         // Note: Le mapping de product vers productId n'est pas automatique avec MapStruct
     }
 

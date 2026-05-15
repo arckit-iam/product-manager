@@ -52,6 +52,7 @@ public class HexaProductServiceTest {
         testProfile.setName("Test Profile");
         testProfile.setProduct("Test Product");
         testProfile.setDescription("Test Profile Description");
+        testProfile.setScope("TIER1");
     }
 
     @Test

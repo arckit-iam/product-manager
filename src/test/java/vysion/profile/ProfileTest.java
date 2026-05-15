@@ -38,16 +38,25 @@ public class ProfileTest {
     }
 
     @Test
+    public void testSetAndGetScope() {
+        String scope = "TIER1";
+        profile.setScope(scope);
+        assertEquals(scope, profile.getScope());
+    }
+
+    @Test
     public void testProfileEqualsAndHashCode() {
         Profile profile1 = new Profile();
         profile1.setProduct("Product1");
         profile1.setName("Profile1");
         profile1.setDescription("Desc1");
+        profile1.setScope("TIER1");
         
         Profile profile2 = new Profile();
         profile2.setProduct("Product1");
         profile2.setName("Profile1");
         profile2.setDescription("Desc1");
+        profile2.setScope("TIER1");
         
         assertEquals(profile1, profile2);
         assertEquals(profile1.hashCode(), profile2.hashCode());
@@ -58,12 +67,14 @@ public class ProfileTest {
         profile.setProduct("Test Product");
         profile.setName("Test Profile");
         profile.setDescription("Test Description");
+        profile.setScope("TIER2");
         
         String toString = profile.toString();
         assertNotNull(toString);
         assertTrue(toString.contains("Test Product"));
         assertTrue(toString.contains("Test Profile"));
         assertTrue(toString.contains("Test Description"));
+        assertTrue(toString.contains("TIER2"));
     }
 
     @Test
@@ -71,5 +82,6 @@ public class ProfileTest {
         assertNull(profile.getProduct());
         assertNull(profile.getName());
         assertNull(profile.getDescription());
+        assertNull(profile.getScope());
     }
 }

@@ -13,6 +13,7 @@ public class CreateJobRequestDto {
     private String entitlementId;
     private String entitlementName;
     private String scope;
+    private String source;
     private Map<String, String> attributes;
     private OffsetDateTime executeAt;
     private String correlationId;
@@ -33,6 +34,8 @@ public class CreateJobRequestDto {
     public void setEntitlementName(String entitlementName) { this.entitlementName = entitlementName; }
     public String getScope() { return scope; }
     public void setScope(String scope) { this.scope = scope; }
+    public String getSource() { return source; }
+    public void setSource(String source) { this.source = source; }
     public Map<String, String> getAttributes() { return attributes; }
     public void setAttributes(Map<String, String> attributes) { this.attributes = attributes; }
     public OffsetDateTime getExecuteAt() { return executeAt; }

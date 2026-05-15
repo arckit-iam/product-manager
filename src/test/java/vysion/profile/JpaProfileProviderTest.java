@@ -47,12 +47,14 @@ public class JpaProfileProviderTest {
         testProfile.setName("Test Profile");
         testProfile.setProduct("Test Product");
         testProfile.setDescription("Test Description");
+        testProfile.setScope("TIER1");
 
         testProfileEntity = new ProfileEntity();
         testProfileEntity.setId(1L);
         testProfileEntity.setName("Test Profile");
         testProfileEntity.setProductId(1L);
         testProfileEntity.setDescription("Test Description");
+        testProfileEntity.setScope("TIER1");
 
         testProductEntity = new ProductEntity();
         testProductEntity.setId(1L);
