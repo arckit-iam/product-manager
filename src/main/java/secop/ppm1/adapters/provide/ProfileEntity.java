@@ -21,6 +21,7 @@ public class ProfileEntity {
   
     private String name;
     private String description;
+    private String scope;
 
     private java.util.UUID jobId;
 

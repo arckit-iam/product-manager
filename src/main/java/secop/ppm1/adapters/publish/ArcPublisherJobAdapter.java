@@ -16,11 +16,15 @@ public class ArcPublisherJobAdapter implements JobPublisher {
     private static final String TARGET_TYPE = "ENTITLEMENT";
 
     private final RestClient restClient;
+    private final String targetSystem;
 
-    public ArcPublisherJobAdapter(@Value("${arc.publisher.url}") String arcPublisherUrl) {
+    public ArcPublisherJobAdapter(
+            @Value("${arc.publisher.url}") String arcPublisherUrl,
+            @Value("${arc.publisher.target-system}") String targetSystem) {
         this.restClient = RestClient.builder()
                 .baseUrl(arcPublisherUrl)
                 .build();
+        this.targetSystem = targetSystem;
     }
 
     @Override
@@ -44,10 +48,10 @@ public class ArcPublisherJobAdapter implements JobPublisher {
         request.setTargetType(TARGET_TYPE);
         request.setIdentityId(productName);
         request.setIdentityName(productName);
-        request.setTargetSystem(productName);
+        request.setTargetSystem(targetSystem);
         request.setEntitlementId(profile.getName());
-        request.setEntitlementName(profile.getName());
-        request.setScope(profile.getDescription());
+        request.setEntitlementName(profile.getDescription() != null ? profile.getDescription() : profile.getName());
+        request.setScope(profile.getScope());
         request.setExecuteAt(OffsetDateTime.now());
         request.setCorrelationId(UUID.randomUUID().toString());
 

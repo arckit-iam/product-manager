@@ -6,4 +6,5 @@ import lombok.Data;
 public class ProfileDto {
     String name;
     String description;
+    String scope;
 }

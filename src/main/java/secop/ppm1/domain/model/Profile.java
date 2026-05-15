@@ -9,5 +9,6 @@ public class Profile {
     String product;
     String name;
     String description;
+    String scope;
     UUID jobId;
 }
