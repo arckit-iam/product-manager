@@ -22,6 +22,8 @@ public class ProfileEntity {
     private String name;
     private String description;
 
+    private java.util.UUID jobId;
+
     public ProfileEntity addProductId(Long id){
         setProductId(id);
         return this;

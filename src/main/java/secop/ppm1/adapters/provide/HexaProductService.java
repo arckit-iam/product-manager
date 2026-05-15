@@ -12,6 +12,7 @@ import secop.ppm1.domain.exception.UniqueProductNameConstraintViolationException
 import secop.ppm1.domain.model.Product;
 import secop.ppm1.domain.model.Profile;
 import secop.ppm1.domain.model.Ressource;
+import secop.ppm1.domain.port.JobPublisher;
 import secop.ppm1.domain.port.ProductProvider;
 import secop.ppm1.domain.port.ProfileProvider;
 import secop.ppm1.domain.service.ProfileApplicaManager;
@@ -21,11 +22,13 @@ public class HexaProductService implements ProfileApplicaManager {
 
     private final ProductProvider productProvider;
     private final ProfileProvider profileProvider;
-    
+    private final JobPublisher jobPublisher;
+
     @Autowired
-    HexaProductService(ProductProvider productProvider,ProfileProvider profileProvider){
+    HexaProductService(ProductProvider productProvider, ProfileProvider profileProvider, JobPublisher jobPublisher) {
         this.productProvider = productProvider;
         this.profileProvider = profileProvider;
+        this.jobPublisher = jobPublisher;
     }
 
     @Override
@@ -64,8 +67,10 @@ public class HexaProductService implements ProfileApplicaManager {
     }
 
     @Override
-    public Product addProfileToProduct(String productName, Profile profile) {   
-        profileProvider.save(profile,productName);
+    public Product addProfileToProduct(String productName, Profile profile) {
+        java.util.UUID jobId = jobPublisher.publishCreateEntitlement(productName, profile);
+        profile.setJobId(jobId);
+        profileProvider.save(profile, productName);
         Product result = productProvider.findByProductName(productName);
         result.setProfiles(profileProvider.getProfilesByProduct(productName));
         return result;
@@ -73,11 +78,12 @@ public class HexaProductService implements ProfileApplicaManager {
 
     @Override
     public Product deleteProfileToProduct(String productName, Profile profile) {
+        jobPublisher.publishDeleteEntitlement(productName, profile);
         profileProvider.deleteProfile(profile);
         Product result = productProvider.findByProductName(productName);
         result.setProfiles(profileProvider.getProfilesByProduct(productName));
         return result;
-      }
+    }
 
     @Override
     public Product getProduct(String productName) {

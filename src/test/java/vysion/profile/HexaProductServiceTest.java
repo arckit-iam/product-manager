@@ -19,6 +19,7 @@ import secop.ppm1.domain.exception.NotFoundException;
 import secop.ppm1.domain.exception.UniqueProductNameConstraintViolationException;
 import secop.ppm1.domain.model.Product;
 import secop.ppm1.domain.model.Profile;
+import secop.ppm1.domain.port.JobPublisher;
 import secop.ppm1.domain.port.ProductProvider;
 import secop.ppm1.domain.port.ProfileProvider;
 
@@ -29,6 +30,9 @@ public class HexaProductServiceTest {
 
     @Mock
     private ProfileProvider profileProvider;
+
+    @Mock
+    private JobPublisher jobPublisher;
 
     @InjectMocks
     private HexaProductService hexaProductService;
@@ -212,9 +216,11 @@ public class HexaProductServiceTest {
 
     @Test
     public void testAddProfileToProduct() {
+        java.util.UUID jobId = java.util.UUID.randomUUID();
         List<Profile> profiles = Arrays.asList(testProfile);
         testProduct.setProfiles(profiles);
 
+        when(jobPublisher.publishCreateEntitlement("Test Product", testProfile)).thenReturn(jobId);
         when(profileProvider.save(testProfile, "Test Product")).thenReturn(testProfile);
         when(productProvider.findByProductName("Test Product")).thenReturn(testProduct);
         when(profileProvider.getProfilesByProduct("Test Product")).thenReturn(profiles);
@@ -224,6 +230,7 @@ public class HexaProductServiceTest {
         assertNotNull(result);
         assertEquals("Test Product", result.getName());
         assertEquals(1, result.getProfiles().size());
+        verify(jobPublisher, times(1)).publishCreateEntitlement("Test Product", testProfile);
         verify(profileProvider, times(1)).save(testProfile, "Test Product");
         verify(productProvider, times(1)).findByProductName("Test Product");
         verify(profileProvider, times(1)).getProfilesByProduct("Test Product");
@@ -234,6 +241,7 @@ public class HexaProductServiceTest {
         List<Profile> profiles = Arrays.asList(); // Liste vide après suppression
         testProduct.setProfiles(profiles);
 
+        when(jobPublisher.publishDeleteEntitlement("Test Product", testProfile)).thenReturn(java.util.UUID.randomUUID());
         doNothing().when(profileProvider).deleteProfile(testProfile);
         when(productProvider.findByProductName("Test Product")).thenReturn(testProduct);
         when(profileProvider.getProfilesByProduct("Test Product")).thenReturn(profiles);
@@ -243,6 +251,7 @@ public class HexaProductServiceTest {
         assertNotNull(result);
         assertEquals("Test Product", result.getName());
         assertEquals(0, result.getProfiles().size());
+        verify(jobPublisher, times(1)).publishDeleteEntitlement("Test Product", testProfile);
         verify(profileProvider, times(1)).deleteProfile(testProfile);
         verify(productProvider, times(1)).findByProductName("Test Product");
         verify(profileProvider, times(1)).getProfilesByProduct("Test Product");
