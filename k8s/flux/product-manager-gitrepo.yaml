@@ -9,7 +9,5 @@ spec:
   url: https://github.com/arckit-iam/product-manager
   ref:
     branch: main
-  # secretRef:        # Décommenter si le repo est privé :
-  #   name: product-manager-git-token
-  #   (créer le secret : kubectl create secret generic product-manager-git-token
-  #    --namespace=flux-system --from-literal=username=arckit-iam --from-literal=password=<PAT>)
+  secretRef:
+    name: github-auth
