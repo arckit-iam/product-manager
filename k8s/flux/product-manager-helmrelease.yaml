@@ -16,7 +16,7 @@ spec:
   values:
     image:
       repository: ghcr.io/arckit-iam/product-manager
-      tag: "1.1.11-dev"
+      tag: "1.1.12-dev"
       pullPolicy: IfNotPresent
     imagePullSecrets:
       - name: ghcr
