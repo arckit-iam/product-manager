@@ -18,3 +18,10 @@ security:
 
 server:
   port: "8080"
+
+ingress:
+  enabled: true
+  host: "ppm.arckit.fr"
+  tls:
+    enabled: true
+    clusterIssuer: "letsencrypt-prod"
