@@ -1,5 +1,7 @@
 ---
 extends: default
+ignore: |
+  k8s/templates/
 rules:
   line-length:
     max: 120
