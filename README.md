@@ -84,7 +84,7 @@ mvn clean test jacoco:report       # avec rapport de couverture (target/site/jac
 
 ## Déploiement
 
-Le chart Helm et les manifestes FluxCD sont dans le dépôt [arc-kubeorchestrator](https://github.com/arckit-iam/arc-kubeorchestrator). Les workflows GitHub Actions (`build.yml`, `promote.yml`, `deploy.yml`) construisent et publient l'image sur GHCR.
+Le déploiement GitOps (Helm, FluxCD) est géré dans un dépôt privé. L'intégration et la mise en production de la plateforme sont proposées par Dédale Solutions en **service payant** : pour en discuter, contactez-nous via le profil GitHub de l'organisation [arckit-iam](https://github.com/arckit-iam). Les workflows GitHub Actions (`build.yml`, `promote.yml`, `deploy.yml`) construisent et publient l'image sur GHCR.
 
 ## Contribuer et sécurité
 
