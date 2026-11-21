@@ -1,58 +1,51 @@
 services:
-  ppm1-api:
-      image: ${GHCR_REGISTRY_URL}/ppm1:latest  # Image depuis GitHub Container Registry
-      container_name: ppm1-api-container
-      ports:
-        - "8080:8080"
-      depends_on:
-        ppm1-db:
-          condition: service_healthy
-      env_file:
-        - .env   # Chargé uniquement en local
-      environment:
-        - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
-        - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
-        - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
-        - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
-        - SPRING_FLYWAY_ENABLED=${SPRING_FLYWAY_ENABLED:-true}
-      restart: unless-stopped
-      healthcheck:
-        test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-        interval: 30s
-        timeout: 10s
-        retries: 5
-        start_period: 60s
-      networks:
-        - ppm1-net
-        
-  ppm1-db:
-    image: mysql:8.0
-    volumes:
-     - ppm1-data:/var/lib/mysql
-    container_name: ppm1-db-container
-    restart: unless-stopped
-    env_file:
-        - .env
-    environment:
-      - MYSQL_ROOT_PASSWORD=${ROOT_DATASOURCE_PASSWORD}
-      - MYSQL_DATABASE=${SPRING_DATASOURCE_DATABASE}
-      - MYSQL_USER=${SPRING_DATASOURCE_USERNAME}
-      - MYSQL_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+  api:
+    build: .
+    container_name: product-manager-api
     ports:
-      - "3306:3306"
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:?POSTGRES_DB requis}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?POSTGRES_USER requis}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD requis}
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_FLYWAY_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
+      SPRING_FLYWAY_USER: ${POSTGRES_USER}
+      SPRING_FLYWAY_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_SECURITY_USER_NAME: ${API_USER:?API_USER requis}
+      SPRING_SECURITY_USER_PASSWORD: ${API_PASSWORD:?API_PASSWORD requis}
+      ARC_PUBLISHER_URL: ${ARC_PUBLISHER_URL:-http://arc-publisher:8081}
+    restart: unless-stopped
+    networks:
+      - product-manager-net
+
+  db:
+    image: postgres:16-alpine
+    container_name: product-manager-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - product-manager-data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${ROOT_DATASOURCE_PASSWORD}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
+    restart: unless-stopped
     networks:
-      - ppm1-net
+      - product-manager-net
 
 volumes:
-  ppm1-data:
-    driver: local
+  product-manager-data:
 
 networks:
-  ppm1-net:
+  product-manager-net:
     driver: bridge
