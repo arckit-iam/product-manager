@@ -1,11 +1,11 @@
 # PPM1 - Profile & Permissions Management
 
-[![Build Status](https://github.com/EtiennSalle/profile/actions/workflows/integration.yml/badge.svg)](https://github.com/EtiennSalle/profile/actions/workflows/integration.yml)
+[![Build Status](https://github.com/arckit-iam/product-manager/actions/workflows/integration.yml/badge.svg)](https://github.com/arckit-iam/product-manager/actions/workflows/integration.yml)
 [![Test Coverage](https://img.shields.io/badge/Coverage-100%25-brightgreen)](docs/TEST_COVERAGE.md)
 [![Tests](https://img.shields.io/badge/Tests-130%20passing-green)](src/test)
 [![Java Version](https://img.shields.io/badge/Java-21-blue)](https://openjdk.org/projects/jdk/21/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.5-green)](https://spring.io/projects/spring-boot)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-EUPL--1.2-blue.svg)](LICENSE)
 
 ## 📋 Description
 
@@ -52,8 +52,8 @@ src/
 
 ```bash
 # Cloner le dépôt
-git clone [github.com](https://github.com/EtiennSalle/profile.git)
-cd profile
+git clone https://github.com/arckit-iam/product-manager.git
+cd product-manager
 
 # Copier la configuration locale
 cp .env.local .env
@@ -291,15 +291,20 @@ secop.ppm1/
 - [Configuration des secrets GitHub](docs/GITHUB_SECRETS.md)
 - [Guide de couverture des tests](docs/TEST_COVERAGE.md)
 - [Résumé de la migration vers GHCR](MIGRATION_SUMMARY.md)
+- [Intégration arc-publisher](docs/API.md)
+- [Documentation de la plateforme (arc-docs)](https://github.com/arckit-iam/arc-docs) : modèle abstrait, architecture globale, publication et messaging
+- [Déploiement (arc-kubeorchestrator)](https://github.com/arckit-iam/arc-kubeorchestrator/tree/main/docs) : Helm, Flux et CI/CD
 
 ## 📞 Support
 
-- [GitHub Issues](https://github.com/EtiennSalle/profile/issues)
-- [GitHub Discussions](https://github.com/EtiennSalle/profile/discussions)
+- [GitHub Issues](https://github.com/arckit-iam/product-manager/issues)
+- [GitHub Discussions](https://github.com/arckit-iam/product-manager/discussions)
 
 ## 📝 Licence
 
-Ce projet est distribué sous licence MIT. Consultez le fichier [LICENSE](LICENSE) pour plus d'informations.
+Copyright © 2026 Dédale Solutions
+
+Ce projet est distribué sous la licence [EUPL-1.2](LICENSE) (European Union Public Licence v. 1.2).
 
 ---
 
