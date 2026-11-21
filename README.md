@@ -9,44 +9,50 @@
 
 ## 📋 Description
 
-PPM1 est une application Spring Boot pour la gestion des profils et permissions. Elle implémente une **architecture hexagonale** avec des adaptateurs pour l'accès aux données et l'exposition REST.
+PPM1 est une application Spring Boot dédiée à la gestion des profils et des permissions. Elle repose sur une **architecture hexagonale**, avec des adaptateurs pour la persistance des données et l'exposition d'une API REST.
 
-✨ **Caractéristiques principales :**
+### ✨ Caractéristiques principales
+
 - 🏗️ **Architecture hexagonale** propre et maintenable
-- ✅ **Couverture de tests à 100%** (130 tests)
+- ✅ **Couverture de tests à 100 %** avec 130 tests
 - 🔧 **MapStruct** pour le mapping automatique
-- 🐳 **Docker** ready avec MySQL
-- 🚀 **CI/CD** complet avec GitHub Actions
+- 🐳 **Prise en charge de Docker** avec MySQL
+- 🚀 **Pipeline CI/CD** avec GitHub Actions
 
 ## 🏗️ Architecture
 
-```
+```text
 src/
-├── main/java/secop/ppm1/
-│   ├── domain/                 # Logique métier
-│   │   ├── model/             # Entités du domaine
-│   │   ├── port/              # Interfaces (ports)
-│   │   └── service/           # Services métier
-│   └── adapters/              # Adaptateurs
-│       ├── in/                # Adaptateurs entrants (JPA)
-│       └── out/               # Adaptateurs sortants (REST)
-└── test/                      # Tests unitaires et d'intégration
+├── main/
+│   └── java/
+│       └── secop/
+│           └── ppm1/
+│               ├── ProfileApplication.java
+│               ├── domain/
+│               │   ├── model/
+│               │   ├── port/
+│               │   └── service/
+│               └── adapters/
+│                   ├── in/       # Adaptateurs entrants, par exemple REST
+│                   └── out/      # Adaptateurs sortants, par exemple JPA
+└── test/
+    └── java/                     # Tests unitaires et d'intégration
 ```
 
-## 🚀 Démarrage Rapide
+## 🚀 Démarrage rapide
 
 ### Prérequis
 
 - **Java 21** ou supérieur
-- **Maven 3.8+**
-- **Docker** (optionnel, pour MySQL)
-- **MySQL 8.0** (production)
+- **Maven 3.8+**, ou le Maven Wrapper fourni
+- **Docker** facultatif, pour lancer MySQL
+- **MySQL 8.0** pour l'environnement de production
 
 ### Installation
 
 ```bash
-# Cloner le repository
-git clone https://github.com/EtiennSalle/profile.git
+# Cloner le dépôt
+git clone [github.com](https://github.com/EtiennSalle/profile.git)
 cd profile
 
 # Copier la configuration locale
@@ -59,205 +65,242 @@ cp .env.local .env
 ./mvnw spring-boot:run
 ```
 
-### Base de Données
+> Sous Windows, utilisez `mvnw.cmd` à la place de `./mvnw`.
 
-#### Développement (H2)
+### Base de données
+
+#### Développement et tests avec H2
+
 ```properties
-# Configuration automatique pour les tests
 spring.datasource.url=jdbc:h2:mem:testdb
 spring.jpa.hibernate.ddl-auto=create-drop
 ```
 
-#### Production (MySQL)
+#### Production avec MySQL
+
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/ppm1
 spring.datasource.username=ppm1_user
 spring.datasource.password=${DB_PASSWORD}
 ```
 
-## 🧪 Tests et Qualité
+## 🧪 Tests et qualité
 
-### Couverture de Tests
+### Couverture des tests
 
-Le projet utilise **JaCoCo** pour mesurer la couverture de tests avec **exclusion automatique des classes générées** (MapStruct) :
+Le projet utilise **JaCoCo** pour mesurer la couverture des tests. Les classes générées par MapStruct sont automatiquement exclues du rapport.
 
 ```bash
-# Génération du rapport de couverture
+# Générer le rapport de couverture
 ./mvnw clean test jacoco:report
 
-# Script personnalisé (Windows)
+# Script rapide sous Windows
 .\scripts\coverage-simple.ps1
 
-# Script personnalisé détaillé (Windows)
+# Script détaillé sous Windows
 .\scripts\coverage.ps1
 
-# Ouverture du rapport HTML
-start target\site\jacoco\index.html  # Windows
+# Script sous Linux ou macOS
+./scripts/coverage.sh
 ```
 
-### 🏆 Métriques Actuelles (Excellentes !)
+Pour ouvrir le rapport HTML sous Windows :
 
-- **Tests unitaires** : **130 tests** ✅
-- **Couverture globale** : **100%** ✅ 
-- **Instructions** : **100% (21/21)** ✅
-- **Lignes** : **100% (4/4)** ✅
-- **Méthodes** : **100% (1/1)** ✅
+```powershell
+start target\site\jacoco\index.html
+```
 
-### 📋 Types de Tests
+Le rapport est disponible à l'emplacement suivant :
 
-| Type de Test | Nombre | Description |
-|--------------|--------|-------------|
-| **Tests Unitaires** | 73 | Tests des classes du domaine |
-| **Tests d'Intégration** | 33 | Tests des providers JPA et services |
-| **Tests de Contrôleurs** | 10 | Tests REST avec `@WebMvcTest` |
-| **Tests d'Exceptions** | 14 | Tests de gestion d'erreurs |
+```text
+target/site/jacoco/index.html
+```
 
-### ✅ Objectifs de Qualité (ATTEINTS)
+### 🏆 Métriques actuelles
 
-| Métrique | Cible | Statut |
-|----------|-------|--------|
-| Instructions | ≥ 80% | ✅ **100%** |
-| Lignes | ≥ 80% | ✅ **100%** |
-| Méthodes | ≥ 90% | ✅ **100%** |
-| Classes métier | ≥ 80% | ✅ **100%** |
+- **Tests** : 130
+- **Couverture globale** : 100 %
+- **Instructions** : 100 % (21/21)
+- **Lignes** : 100 % (4/4)
+- **Méthodes** : 100 % (1/1)
 
-### 🎯 Configuration JaCoCo
+### 📋 Répartition des tests
 
-- **Classes exclues** : `*MapperImpl.class` (générées par MapStruct)
-- **Seuil minimum** : 80% (largement dépassé)
-- **Rapports** : HTML, XML, CSV
-- **CI/CD** : Intégration avec GitHub Actions
+| Type de test | Nombre | Description |
+|---|---:|---|
+| **Tests unitaires** | 73 | Tests des classes du domaine |
+| **Tests d'intégration** | 33 | Tests des adaptateurs JPA et des services |
+| **Tests de contrôleurs** | 10 | Tests REST avec `@WebMvcTest` |
+| **Tests d'exceptions** | 14 | Tests de la gestion des erreurs |
+| **Total** | **130** | Ensemble des tests automatisés |
+
+### ✅ Objectifs de qualité
+
+| Métrique | Cible | Résultat |
+|---|---:|---:|
+| Instructions | ≥ 80 % | **100 %** |
+| Lignes | ≥ 80 % | **100 %** |
+| Méthodes | ≥ 90 % | **100 %** |
+| Classes métier | ≥ 80 % | **100 %** |
+
+### 🎯 Configuration de JaCoCo
+
+- **Classes exclues** : `*MapperImpl.class`, générées par MapStruct
+- **Seuil minimal** : 80 %
+- **Formats des rapports** : HTML, XML et CSV
+- **CI/CD** : intégration avec GitHub Actions
 
 ## 🐳 Docker
 
-### Build Local
+### Construction locale
 
 ```bash
-# Construction de l'image
 docker build -t profile-app .
-
-# Exécution
-docker run -p 8080:8080 profile-app
 ```
 
-### Docker Compose (avec MySQL)
+### Exécution du conteneur
 
 ```bash
-# Démarrage complet
-docker-compose up -d
+docker run --rm -p 8080:8080 profile-app
+```
 
-# Arrêt
-docker-compose down
+### Docker Compose avec MySQL
+
+```bash
+# Démarrer les services
+docker compose up -d
+
+# Arrêter les services
+docker compose down
 ```
 
 ## 🚀 Déploiement
 
 ### GitHub Container Registry
 
-Le projet utilise **GitHub Container Registry (GHCR)** pour le stockage des images :
+Le projet utilise **GitHub Container Registry**, ou GHCR, pour stocker les images Docker.
 
-- **Registry** : `ghcr.io/etiennesalle/profile`
-- **Tags** : Versions sémantiques (1.0.0) + `latest`
-- **Authentification** : GitHub Token automatique
+- **Registre** : `ghcr.io/etiennesalle/profile`
+- **Tags** : versions sémantiques, par exemple `1.0.0`, et `latest`
+- **Authentification** : jeton GitHub configuré dans GitHub Actions
 
-### Déploiement OVH
+### Déploiement sur OVH
+
+Sous Windows :
+
+```powershell
+.\scripts\deploy-ovh.ps1
+```
+
+Sous Linux ou macOS :
 
 ```bash
-# Script de déploiement (Windows)
-.\scripts\deploy-ovh.ps1
-
-# Script de déploiement (Linux/macOS)
 ./scripts/deploy-ovh.sh
 ```
 
-Voir [DEPLOYMENT_OVH.md](docs/DEPLOYMENT_OVH.md) pour la configuration complète.
+Consultez le [guide de déploiement OVH](docs/DEPLOYMENT_OVH.md) pour obtenir la configuration complète.
 
 ## 🔧 Développement
 
-### Structure des Packages
+### Structure des packages
 
-```
+```text
 secop.ppm1/
-├── ProfileApplication.java        # Point d'entrée Spring Boot
-├── domain/                        # Couche domaine (métier)
-│   ├── model/                    # Entités métier
-│   ├── port/                     # Interfaces (contrats)
-│   └── service/                  # Logique applicative
-└── adapters/                     # Couche infrastructure
-    ├── in/                       # Persistance (JPA)
-    └── out/                      # Exposition (REST)
+├── ProfileApplication.java       # Point d'entrée Spring Boot
+├── domain/                       # Couche métier
+│   ├── model/                    # Entités du domaine
+│   ├── port/                     # Interfaces et contrats
+│   └── service/                  # Services métier
+└── adapters/                     # Couche d'infrastructure
+    ├── in/                       # Adaptateurs entrants, par exemple REST
+    └── out/                      # Adaptateurs sortants, par exemple JPA
 ```
 
-### Technologies Utilisées
+### Technologies utilisées
 
 - **Framework** : Spring Boot 3.3.5
-- **Persistance** : Spring Data JPA + MySQL  
-- **Mapping** : MapStruct (génération automatique)
-- **Tests** : JUnit 5 + Mockito + @WebMvcTest
-- **Couverture** : JaCoCo (100% atteint !)
+- **Langage** : Java 21
+- **Persistance** : Spring Data JPA et MySQL
+- **Mapping** : MapStruct
+- **Tests** : JUnit 5, Mockito et `@WebMvcTest`
+- **Couverture** : JaCoCo
 - **Build** : Maven
-- **Containerisation** : Docker
+- **Conteneurisation** : Docker
 - **CI/CD** : GitHub Actions
 
-### Scripts de Développement
+### Scripts de développement
 
 | Script | Description | Plateforme |
-|--------|-------------|------------|
-| `coverage-simple.ps1` | Rapport de couverture rapide | Windows |
-| `coverage.ps1` | Rapport de couverture complet | Windows |
-| `coverage.sh` | Rapport de couverture complet | Linux/macOS |
-| `deploy-ovh.ps1` | Déploiement OVH | Windows |
-| `deploy-ovh.sh` | Déploiement OVH | Linux/macOS |
+|---|---|---|
+| `coverage-simple.ps1` | Génération rapide du rapport de couverture | Windows |
+| `coverage.ps1` | Génération complète du rapport de couverture | Windows |
+| `coverage.sh` | Génération complète du rapport de couverture | Linux/macOS |
+| `deploy-ovh.ps1` | Déploiement sur OVH | Windows |
+| `deploy-ovh.sh` | Déploiement sur OVH | Linux/macOS |
 
-## 📊 Métriques et Monitoring
+## 📊 Métriques et supervision
 
-### Endpoints Actuator
+### Endpoints Spring Boot Actuator
 
-- **Health** : `http://localhost:8080/actuator/health`
-- **Metrics** : `http://localhost:8080/actuator/metrics`
-- **Info** : `http://localhost:8080/actuator/info`
+- **État de l'application** : `[localhost](http://localhost:8080/actuator/health)`
+- **Métriques** : `[localhost](http://localhost:8080/actuator/metrics)`
+- **Informations** : `[localhost](http://localhost:8080/actuator/info)`
 
-### Rapports de Qualité
+### Rapports de qualité
 
-- **Couverture JaCoCo** : `target/site/jacoco/index.html`
+- **Rapport JaCoCo** : `target/site/jacoco/index.html`
 - **Rapports Surefire** : `target/surefire-reports/`
 
 ## 🤝 Contribution
 
-### Workflow de Développement
+### Workflow de développement
 
-1. **Fork** le repository
-2. **Créer** une branche feature (`git checkout -b feature/awesome-feature`)
-3. **Commit** les changements (`git commit -m 'Add awesome feature'`)
-4. **Push** vers la branche (`git push origin feature/awesome-feature`)
-5. **Ouvrir** une Pull Request
+1. Forker le dépôt.
+2. Créer une branche :
 
-### Standards de Code
+   ```bash
+   git checkout -b feature/awesome-feature
+   ```
 
-- **Tests** : Couverture **100%** atteinte ! Maintenir ≥ 80% pour les nouvelles features
-- **Architecture** : Hexagonale avec séparation claire des couches
-- **MapStruct** : Classes générées automatiquement exclues de la couverture
-- **Documentation** : JavaDoc pour les APIs publiques
-- **Convention** : Google Java Style Guide
-- **Commits** : Messages conventionnels (Conventional Commits)
+3. Enregistrer les changements :
+
+   ```bash
+   git commit -m "feat: add awesome feature"
+   ```
+
+4. Envoyer la branche :
+
+   ```bash
+   git push origin feature/awesome-feature
+   ```
+
+5. Ouvrir une Pull Request.
+
+### Standards de code
+
+- **Tests** : maintenir une couverture minimale de 80 % pour les nouvelles fonctionnalités
+- **Architecture** : respecter la séparation des couches de l'architecture hexagonale
+- **MapStruct** : exclure les classes générées des rapports de couverture
+- **Documentation** : ajouter de la JavaDoc aux API publiques
+- **Style** : respecter le Google Java Style Guide
+- **Commits** : suivre la convention Conventional Commits
 
 ## 📚 Documentation
 
-- [Guide de Déploiement OVH](docs/DEPLOYMENT_OVH.md)
-- [Configuration GitHub Secrets](docs/GITHUB_SECRETS.md)
-- [Guide de Couverture de Tests](docs/TEST_COVERAGE.md)
-- [Résumé de Migration GHCR](MIGRATION_SUMMARY.md)
+- [Guide de déploiement OVH](docs/DEPLOYMENT_OVH.md)
+- [Configuration des secrets GitHub](docs/GITHUB_SECRETS.md)
+- [Guide de couverture des tests](docs/TEST_COVERAGE.md)
+- [Résumé de la migration vers GHCR](MIGRATION_SUMMARY.md)
 
 ## 📞 Support
 
-- **Issues** : [GitHub Issues](https://github.com/EtiennSalle/profile/issues)
-- **Discussions** : [GitHub Discussions](https://github.com/EtiennSalle/profile/discussions)
+- [GitHub Issues](https://github.com/EtiennSalle/profile/issues)
+- [GitHub Discussions](https://github.com/EtiennSalle/profile/discussions)
 
 ## 📝 Licence
 
-Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+Ce projet est distribué sous licence MIT. Consultez le fichier [LICENSE](LICENSE) pour plus d'informations.
 
 ---
 
-**Développé avec ❤️ par l'équipe PPM1**#   p r o d u c t - m a n a g e r  
- 
+**Développé avec ❤️ par l'équipe PPM1**
