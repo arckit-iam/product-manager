@@ -12,7 +12,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout arc-kubeorchestrator
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: arckit-iam/arc-kubeorchestrator
           token: ${{ secrets.GITOPS_TOKEN }}
@@ -26,7 +26,7 @@ jobs:
           sed -i "s/tag: \".*\"/tag: \"${{ steps.version.outputs.VERSION }}\"/" flux/product-manager/helmrelease.yaml
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6
         with:
           token: ${{ secrets.GITOPS_TOKEN }}
           commit-message: "chore(gitops): bump product-manager HelmRelease tag to ${{ steps.version.outputs.VERSION }}"
