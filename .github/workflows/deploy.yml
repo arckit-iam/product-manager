@@ -53,11 +53,19 @@ jobs:
             --from-literal=password=${{ secrets.PRODUCT_MANAGER_SECURITY_PASSWORD }} \
             --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Apply all FluxCD manifests (k8s/flux)
+      - name: Checkout arc-kubeorchestrator
+        uses: actions/checkout@v4
+        with:
+          repository: arckit-iam/arc-kubeorchestrator
+          token: ${{ secrets.GITOPS_TOKEN }}
+          path: arc-kubeorchestrator
+
+      - name: Apply all FluxCD manifests (product-manager)
         env:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig.yaml
         run: |
-          kubectl apply -f k8s/flux/
+          kubectl apply -f arc-kubeorchestrator/flux/gitrepo.yaml
+          kubectl apply -f arc-kubeorchestrator/flux/product-manager/
 
       - name: Clean up kubeconfig
         if: always()

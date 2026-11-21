@@ -1,6 +1,0 @@
----
-apiVersion: v2
-name: product-manager
-version: 0.1.0
-description: Product Manager Helm chart — Ressources and permissions management
-appVersion: "1.0.0"

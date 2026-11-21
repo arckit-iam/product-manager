@@ -71,24 +71,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Lint all YAML manifests (k8s/)
-        uses: ibiqlik/action-yamllint@v3
-        with:
-          file_or_dir: k8s/
-
-      - name: Upload k8s manifests as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: k8s-manifests
-          path: k8s/
-
-      - name: Bump HelmRelease tag to VERSION-dev
+      - name: Bump HelmRelease tag in arc-kubeorchestrator
         run: |
+          git clone https://x-access-token:${{ secrets.GITOPS_TOKEN }}@github.com/arckit-iam/arc-kubeorchestrator.git /tmp/arc-kubeorchestrator
+          cd /tmp/arc-kubeorchestrator
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin main
-          git checkout main
-          sed -i "s/tag: \".*\"/tag: \"${{ steps.version.outputs.VERSION }}-dev\"/" k8s/flux/product-manager-helmrelease.yaml
-          git add k8s/flux/product-manager-helmrelease.yaml
-          git diff --staged --quiet || git commit -m "chore(gitops): bump HelmRelease tag to ${{ steps.version.outputs.VERSION }}-dev [skip ci]"
+          sed -i "s/tag: \".*\"/tag: \"${{ steps.version.outputs.VERSION }}-dev\"/" flux/product-manager/helmrelease.yaml
+          git add flux/product-manager/helmrelease.yaml
+          git diff --staged --quiet || git commit -m "chore(gitops): bump product-manager HelmRelease tag to ${{ steps.version.outputs.VERSION }}-dev [skip ci]"
           git push origin main

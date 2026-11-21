@@ -9,14 +9,13 @@ jobs:
   bump:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
     steps:
-      - name: Checkout repository
+      - name: Checkout arc-kubeorchestrator
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: arckit-iam/arc-kubeorchestrator
+          token: ${{ secrets.GITOPS_TOKEN }}
 
       - name: Extract version from tag
         id: version
@@ -24,13 +23,14 @@ jobs:
 
       - name: Bump HelmRelease tag
         run: |
-          sed -i "s/tag: \".*\"/tag: \"${{ steps.version.outputs.VERSION }}\"/" k8s/flux/product-manager-helmrelease.yaml
+          sed -i "s/tag: \".*\"/tag: \"${{ steps.version.outputs.VERSION }}\"/" flux/product-manager/helmrelease.yaml
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
-          commit-message: "chore(gitops): bump HelmRelease tag to ${{ steps.version.outputs.VERSION }}"
-          title: "chore(gitops): bump HelmRelease tag to ${{ steps.version.outputs.VERSION }}"
-          body: "Automated PR to deploy version ${{ steps.version.outputs.VERSION }} via FluxCD."
-          branch: bump-helmrelease-${{ steps.version.outputs.VERSION }}
+          token: ${{ secrets.GITOPS_TOKEN }}
+          commit-message: "chore(gitops): bump product-manager HelmRelease tag to ${{ steps.version.outputs.VERSION }}"
+          title: "chore(gitops): bump product-manager HelmRelease tag to ${{ steps.version.outputs.VERSION }}"
+          body: "Automated PR to deploy product-manager version ${{ steps.version.outputs.VERSION }} via FluxCD."
+          branch: bump-product-manager-${{ steps.version.outputs.VERSION }}
           base: main
