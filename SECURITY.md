@@ -8,7 +8,7 @@ Le projet est en développement actif : seule la dernière version publiée reç
 
 Ne pas ouvrir d'*issue* publique pour une faille de sécurité.
 
-Utiliser le signalement privé de GitHub : onglet **Security** du dépôt, puis **Report a vulnerability** (*private vulnerability reporting*). Indiquer :
+Utiliser le signalement privé de GitHub : onglet **Security** du dépôt, puis **Report a vulnerability** (*private vulnerability reporting*), ou écrire à [etiennsalle@gmail.com](mailto:etiennsalle@gmail.com). Indiquer :
 
 - la version ou le commit concerné ;
 - une description de la faille et de son impact ;
