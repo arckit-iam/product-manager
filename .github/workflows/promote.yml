@@ -15,8 +15,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    outputs:
-      version: ${{ steps.version.outputs.VERSION }}
 
     steps:
       - name: Checkout repository
@@ -60,11 +58,3 @@ jobs:
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:stable
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-
-  deploy:
-    needs: promote
-    if: github.event.action == 'released'
-    uses: ./.github/workflows/deploy.yml
-    with:
-      version: ${{ needs.promote.outputs.version }}
-    secrets: inherit
