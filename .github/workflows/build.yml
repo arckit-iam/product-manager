@@ -70,14 +70,3 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Bump HelmRelease tag in arc-kubeorchestrator
-        run: |
-          git clone https://x-access-token:${{ secrets.GITOPS_TOKEN }}@github.com/arckit-iam/arc-kubeorchestrator.git /tmp/arc-kubeorchestrator
-          cd /tmp/arc-kubeorchestrator
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          sed -i "s/tag: \".*\"/tag: \"${{ steps.version.outputs.VERSION }}-dev\"/" flux/product-manager/helmrelease.yaml
-          git add flux/product-manager/helmrelease.yaml
-          git diff --staged --quiet || git commit -m "chore(gitops): bump product-manager HelmRelease tag to ${{ steps.version.outputs.VERSION }}-dev [skip ci]"
-          git push origin main
