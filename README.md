@@ -15,7 +15,7 @@ Client ──► POST /products/{productName}/profiles ──► product-manager
 
 - Java 25, Spring Boot 3.5
 - PostgreSQL, migrations Flyway
-- MapStruct, Spring Security (Basic Auth)
+- MapStruct, Spring Security (jetons JWT émis par arc-auth)
 - Maven, Docker
 
 ## Architecture hexagonale
@@ -37,16 +37,18 @@ Les adapters implémentent les ports de sortie définis dans le domaine.
 
 ## API REST
 
-Authentification Basic sur tous les endpoints. Le détail des endpoints, des payloads et des codes de réponse est dans [docs/API.md](docs/API.md).
+Toutes les routes exigent un jeton `Authorization: Bearer <jwt>` émis par [arc-auth](https://github.com/arckit-iam/arc-auth), sauf `/actuator/health` (public, sondes). Sans jeton valide : `401`. Avec un rôle insuffisant : `403`. Le détail des endpoints, des payloads et des codes de réponse est dans [docs/API.md](docs/API.md).
 
-| Méthode | Endpoint | Description |
-|---|---|---|
-| `GET` | `/products` | Liste les produits |
-| `GET` | `/products/{productName}` | Retourne un produit |
-| `POST` | `/products` | Crée un produit |
-| `PUT` | `/products/{productName}` | Met à jour un produit |
-| `DELETE` | `/products/{productName}` | Supprime un produit |
-| `POST` | `/products/{productName}/profiles` | Ajoute un profil (et déclenche la création du groupe AD) |
+| Méthode | Endpoint | Rôle requis | Description |
+|---|---|---|---|
+| `GET` | `/products` | `ARC_READER`, `ARC_PUBLISHER` ou `ARC_ADMIN` | Liste les produits |
+| `GET` | `/products/{productName}` | `ARC_READER`, `ARC_PUBLISHER` ou `ARC_ADMIN` | Retourne un produit |
+| `POST` | `/products` | `ARC_PUBLISHER` ou `ARC_ADMIN` | Crée un produit |
+| `PUT` | `/products/{productName}` | `ARC_PUBLISHER` ou `ARC_ADMIN` | Met à jour un produit |
+| `DELETE` | `/products/{productName}` | `ARC_PUBLISHER` ou `ARC_ADMIN` | Supprime un produit |
+| `POST` | `/products/{productName}/profiles` | `ARC_PUBLISHER` ou `ARC_ADMIN` | Ajoute un profil (et déclenche la création du groupe AD) |
+
+Tout autre chemin est refusé.
 
 ## Configuration
 
@@ -55,7 +57,11 @@ Authentification Basic sur tous les endpoints. Le détail des endpoints, des pay
 | `SPRING_PROFILES_ACTIVE` | `dev` (défaut) ou `prod` |
 | `SPRING_DATASOURCE_URL` / `_USERNAME` / `_PASSWORD` | Connexion PostgreSQL |
 | `SPRING_FLYWAY_URL` / `_USER` / `_PASSWORD` / `_ENABLED` | Migrations Flyway (désactivées par défaut en `dev`) |
-| `SPRING_SECURITY_USER_NAME` / `_PASSWORD` | Compte Basic Auth de l'API |
+| `ARC_SECURITY_ISSUER_URI` | Valeur attendue du claim `iss` (obligatoire ; égale à `ARC_AUTH_JWT_ISSUER` d'arc-auth) |
+| `ARC_SECURITY_JWK_SET_URI` | Clés publiques d'arc-auth (défaut `http://arc-auth:8082/.well-known/jwks.json`) |
+| `ARC_SECURITY_AUDIENCE` | Valeur attendue du claim `aud` (défaut `arc`) |
+| `ARC_AUTH_URL` | URL d'arc-auth (défaut `http://arc-auth:8082`) |
+| `ARC_AUTH_USERNAME` / `_PASSWORD` | Compte de service (membre de `arc-publishers`) avec lequel product-manager appelle arc-publisher (obligatoires) |
 | `ARC_PUBLISHER_URL` | URL d'arc-publisher (défaut `http://arc-publisher:8081`) |
 | `ARC_PUBLISHER_TARGET_SYSTEM` | Système cible des jobs (défaut `ad://DC01`) |
 | `ARC_PUBLISHER_SOURCE` | Valeur du champ `source` des jobs (défaut `product-manager`) |

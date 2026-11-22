@@ -27,6 +27,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -37,6 +39,7 @@ import secop.ppm1.adapters.expose.ProductDtoMapper;
 import secop.ppm1.adapters.expose.ProfileDto;
 import secop.ppm1.adapters.expose.ProfileDtoMapper;
 import secop.ppm1.adapters.expose.RestProductController;
+import secop.ppm1.adapters.expose.SecurityConfig;
 import secop.ppm1.domain.model.Product;
 import secop.ppm1.domain.model.Profile;
 import secop.ppm1.domain.service.ProfileApplicaManager;
@@ -45,14 +48,19 @@ import secop.ppm1.ProfileApplication;
 @WebMvcTest(value = RestProductController.class, 
             properties = {
                 "spring.main.allow-bean-definition-overriding=true",
+                "spring.security.oauth2.resourceserver.jwt.issuer-uri=http://arc-auth.test",
                 "logging.level.org.springframework.security=INFO",
                 "logging.level.org.hibernate.SQL=INFO"
             })
-@ContextConfiguration(classes = {RestProductController.class})
+@ContextConfiguration(classes = {RestProductController.class, SecurityConfig.class})
+@WithMockUser(roles = "ARC_ADMIN")
 public class RestProductControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockBean
+    private JwtDecoder jwtDecoder;
 
     @MockBean
     private ProfileApplicaManager productService;

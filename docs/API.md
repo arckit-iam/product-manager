@@ -9,13 +9,19 @@ Chaque profil est associé à un groupe AD via le service **arc-publisher** : la
 
 ## Authentification
 
-Basic Authentication sur tous les endpoints.
+Jeton JWT émis par [arc-auth](https://github.com/arckit-iam/arc-auth) (`POST /token`), à présenter sur chaque requête :
 
 ```
-Authorization: Basic <base64(username:password)>
+Authorization: Bearer <jwt>
 ```
 
-Les credentials sont configurés via le secret Kubernetes `product-manager-api-secret`.
+| Endpoints | Rôle requis |
+|-----------|-------------|
+| `GET /products`, `GET /products/{productName}` | `ARC_READER`, `ARC_PUBLISHER` ou `ARC_ADMIN` |
+| `POST`, `PUT`, `DELETE` sur `/products/**` (dont `POST /products/{productName}/profiles`) | `ARC_PUBLISHER` ou `ARC_ADMIN` |
+| `/actuator/health` | public |
+
+Sans jeton valide : `401`. Avec un rôle insuffisant : `403`. Tout autre chemin est refusé.
 
 ---
 
@@ -171,6 +177,8 @@ Lors de la création d'un profil, product-manager envoie à arc-publisher :
 
 arc-publisher publie ensuite l'event sur le topic Kafka `arc.provisioning.entitlement`, qui est consommé par **arc-agent-ad** pour créer le groupe dans l'Active Directory.
 
+L'appel est authentifié : product-manager obtient auprès d'arc-auth, avec son compte de service (membre de `arc-publishers`), un jeton qu'il conserve jusqu'à peu avant son expiration. Si arc-publisher le refuse (`401`), un nouveau jeton est demandé et l'appel est retenté une fois.
+
 ---
 
 ## Configuration
@@ -179,6 +187,11 @@ arc-publisher publie ensuite l'event sur le topic Kafka `arc.provisioning.entitl
 |-----------|--------------------------|--------|-------------|
 | `arc.publisher.url` | `ARC_PUBLISHER_URL` | `http://arc-publisher:8081` | URL du service arc-publisher |
 | `arc.publisher.target-system` | `ARC_PUBLISHER_TARGET_SYSTEM` | `ad://AD01` | Identifiant du système AD cible |
+| `spring.security.oauth2.resourceserver.jwt.issuer-uri` | `ARC_SECURITY_ISSUER_URI` | aucun (obligatoire) | Valeur attendue du claim `iss` |
+| `spring.security.oauth2.resourceserver.jwt.jwk-set-uri` | `ARC_SECURITY_JWK_SET_URI` | `http://arc-auth:8082/.well-known/jwks.json` | Clés publiques d'arc-auth |
+| `spring.security.oauth2.resourceserver.jwt.audiences` | `ARC_SECURITY_AUDIENCE` | `arc` | Valeur attendue du claim `aud` |
+| `arc.auth.url` | `ARC_AUTH_URL` | `http://arc-auth:8082` | URL d'arc-auth |
+| `arc.auth.username` / `arc.auth.password` | `ARC_AUTH_USERNAME` / `ARC_AUTH_PASSWORD` | aucun (obligatoires) | Compte de service pour appeler arc-publisher |
 
 ---
 

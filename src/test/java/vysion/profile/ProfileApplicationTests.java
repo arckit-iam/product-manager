@@ -17,8 +17,9 @@ import secop.ppm1.ProfileApplication;
     "spring.jpa.hibernate.ddl-auto=create-drop",
     "spring.flyway.enabled=false",
     "spring.jpa.show-sql=false",
-    "spring.security.user.name=test",
-    "spring.security.user.password=test",
+    "spring.security.oauth2.resourceserver.jwt.issuer-uri=http://arc-auth.test",
+    "arc.auth.username=test",
+    "arc.auth.password=test",
     "logging.level.org.springframework.security=INFO",
     "logging.level.org.hibernate.SQL=INFO"
 })

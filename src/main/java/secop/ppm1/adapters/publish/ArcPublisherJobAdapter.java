@@ -6,8 +6,10 @@ package secop.ppm1.adapters.publish;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import secop.ppm1.domain.model.Profile;
@@ -19,16 +21,23 @@ public class ArcPublisherJobAdapter implements JobPublisher {
     private static final String TARGET_TYPE = "ENTITLEMENT";
 
     private final RestClient restClient;
+    private final ArcAuthTokenProvider tokenProvider;
     private final String targetSystem;
     private final String source;
 
+    @Autowired
     public ArcPublisherJobAdapter(
             @Value("${arc.publisher.url}") String arcPublisherUrl,
             @Value("${arc.publisher.target-system}") String targetSystem,
-            @Value("${arc.publisher.source}") String source) {
-        this.restClient = RestClient.builder()
-                .baseUrl(arcPublisherUrl)
-                .build();
+            @Value("${arc.publisher.source}") String source,
+            ArcAuthTokenProvider tokenProvider) {
+        this(RestClient.builder(), arcPublisherUrl, targetSystem, source, tokenProvider);
+    }
+
+    ArcPublisherJobAdapter(RestClient.Builder builder, String arcPublisherUrl, String targetSystem,
+            String source, ArcAuthTokenProvider tokenProvider) {
+        this.restClient = builder.baseUrl(arcPublisherUrl).build();
+        this.tokenProvider = tokenProvider;
         this.targetSystem = targetSystem;
         this.source = source;
     }
@@ -62,8 +71,19 @@ public class ArcPublisherJobAdapter implements JobPublisher {
         request.setExecuteAt(OffsetDateTime.now());
         request.setCorrelationId(UUID.randomUUID().toString());
 
+        try {
+            return post(request);
+        } catch (HttpClientErrorException.Unauthorized e) {
+            // Jeton refusé (clés d'arc-auth renouvelées, par exemple) : un nouveau jeton, une seule nouvelle tentative.
+            tokenProvider.invalidate();
+            return post(request);
+        }
+    }
+
+    private UUID post(CreateJobRequestDto request) {
         return restClient.post()
                 .uri("/jobs")
+                .headers(headers -> headers.setBearerAuth(tokenProvider.getToken()))
                 .body(request)
                 .retrieve()
                 .body(UUID.class);
