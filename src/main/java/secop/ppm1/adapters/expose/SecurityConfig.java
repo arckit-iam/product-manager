@@ -19,8 +19,8 @@ import org.springframework.security.web.SecurityFilterChain;
  * {@code roles}. L'API est sans état : pas de session, donc pas de protection CSRF.
  *
  * <ul>
- *   <li>{@code GET /products/**} : {@code ARC_READER}, {@code ARC_PUBLISHER} ou {@code ARC_ADMIN}</li>
- *   <li>{@code POST}, {@code PUT} et {@code DELETE /products/**} : {@code ARC_PUBLISHER} ou {@code ARC_ADMIN}</li>
+ *   <li>{@code GET /products/**}, {@code /accounts/**} et {@code /account-types} : {@code ARC_READER}, {@code ARC_PUBLISHER} ou {@code ARC_ADMIN}</li>
+ *   <li>{@code POST}, {@code PUT} et {@code DELETE} sur ces chemins : {@code ARC_PUBLISHER} ou {@code ARC_ADMIN}</li>
  *   <li>{@code /actuator/health} : public (sondes)</li>
  *   <li>tout le reste (dont les dépôts exposés par Spring Data REST) : refusé</li>
  * </ul>
@@ -40,13 +40,14 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(a -> a
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/products", "/products/**")
+                        .requestMatchers(HttpMethod.GET, "/products", "/products/**", "/accounts", "/accounts/**",
+                                "/account-types")
                                 .hasAnyRole(READER, PUBLISHER, ADMIN)
-                        .requestMatchers(HttpMethod.POST, "/products", "/products/**")
+                        .requestMatchers(HttpMethod.POST, "/products", "/products/**", "/accounts", "/accounts/**")
                                 .hasAnyRole(PUBLISHER, ADMIN)
-                        .requestMatchers(HttpMethod.PUT, "/products", "/products/**")
+                        .requestMatchers(HttpMethod.PUT, "/products", "/products/**", "/accounts/**")
                                 .hasAnyRole(PUBLISHER, ADMIN)
-                        .requestMatchers(HttpMethod.DELETE, "/products", "/products/**")
+                        .requestMatchers(HttpMethod.DELETE, "/products", "/products/**", "/accounts/**")
                                 .hasAnyRole(PUBLISHER, ADMIN)
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(o -> o.jwt(j -> j.jwtAuthenticationConverter(jwtAuthenticationConverter())))

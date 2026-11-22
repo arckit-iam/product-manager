@@ -156,6 +156,61 @@ Crée un profil pour un produit. **Déclenche la création d'un groupe AD via ar
 
 ---
 
+### Types de compte
+
+#### GET /account-types
+Types de compte définis par la configuration du déploiement.
+
+```json
+[
+  {
+    "name": "service-account",
+    "kind": "NON_USER",
+    "pattern": "svc-(?<product>[a-z0-9]+)-[a-z]+",
+    "metadata": [{ "name": "owner", "type": "STRING", "required": true }]
+  }
+]
+```
+
+### Comptes non utilisateurs
+
+Lecture : `ARC_READER`, `ARC_PUBLISHER` ou `ARC_ADMIN`. Écriture : `ARC_PUBLISHER` ou `ARC_ADMIN`.
+
+| Endpoint | Description | Codes |
+|----------|-------------|-------|
+| `GET /accounts?product=&type=&uncorrelated=` | Liste filtrable | 200 |
+| `GET /products/{productName}/accounts` | Comptes d'un produit | 200, 404 |
+| `GET /accounts/{identifier}` | Un compte | 200, 404 |
+| `POST /accounts` | Création | 201, 400, 409 |
+| `PUT /accounts/{identifier}/metadata` | Remplace les métadonnées | 200, 400, 404 |
+| `PUT /accounts/{identifier}/product` | Corrélation manuelle `{"product":"compta"}` | 200, 404 |
+| `POST /accounts/correlate` | Rejoue les regex ; `{"correlated": n}` | 200 |
+| `DELETE /accounts/{identifier}` | Suppression + job DELETE | 204, 404 |
+
+**POST /accounts**
+```json
+{ "identifier": "svc-compta-batch", "metadata": { "owner": "alice" } }
+```
+
+Le type et le produit sont déduits de l'identifiant par les regex des types configurés (`type` peut aussi être fourni). Réponse 201 :
+```json
+{
+  "identifier": "svc-compta-batch",
+  "type": "service-account",
+  "product": "compta",
+  "source": "API",
+  "metadata": { "owner": "alice" },
+  "jobId": "7f8422ec-9ad4-48b2-95ef-36f8a3d0a220",
+  "createdAt": "2026-01-01T12:00:00Z"
+}
+```
+
+`400` : identifiant ne correspondant à aucun type, ou métadonnées invalides (champ inconnu, obligatoire manquant, mauvais type). `409` : identifiant déjà existant.
+
+La création publie un job `CREATE`/`IDENTITY` auprès d'arc-publisher avec les attributs `metadata.<champ>`, `product` et `accountType` ; la suppression publie un job `DELETE`.
+
+---
+
 ## Intégration arc-publisher
 
 Lors de la création d'un profil, product-manager envoie à arc-publisher :

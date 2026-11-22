@@ -26,6 +26,7 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
+import secop.ppm1.domain.model.Account;
 import secop.ppm1.domain.model.Profile;
 
 class ArcPublisherJobAdapterTest {
@@ -74,6 +75,7 @@ class ArcPublisherJobAdapterTest {
                 .andRespond(withStatus(HttpStatus.UNAUTHORIZED));
         server.expect(requestTo("http://arc-publisher/jobs"))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer new"))
+                .andExpect(jsonPath("$.action").value("MODIFY"))
                 .andRespond(withSuccess(idJson(), MediaType.APPLICATION_JSON));
 
         assertEquals(jobId, adapter.publishUpdateEntitlement("Compta", profile));
@@ -92,6 +94,47 @@ class ArcPublisherJobAdapterTest {
                 () -> adapter.publishDeleteEntitlement("Compta", profile));
 
         verify(tokens, times(1)).invalidate();
+    }
+
+    @Test
+    void publishesAnIdentityJobForANewAccount() {
+        when(tokens.getToken()).thenReturn("t1");
+        server.expect(requestTo("http://arc-publisher/jobs"))
+                .andExpect(jsonPath("$.action").value("CREATE"))
+                .andExpect(jsonPath("$.targetType").value("IDENTITY"))
+                .andExpect(jsonPath("$.identityId").value("svc-compta-batch"))
+                .andExpect(jsonPath("$.attributes.accountType").value("service-account"))
+                .andExpect(jsonPath("$.attributes.product").value("Compta"))
+                .andExpect(jsonPath("$.attributes['metadata.owner']").value("alice"))
+                .andRespond(withSuccess(idJson(), MediaType.APPLICATION_JSON));
+
+        assertEquals(jobId, adapter.publishCreateAccount(account("Compta")));
+
+        server.verify();
+    }
+
+    @Test
+    void publishesADeleteJobForAnUncorrelatedAccountWithoutMetadata() {
+        when(tokens.getToken()).thenReturn("t1");
+        server.expect(requestTo("http://arc-publisher/jobs"))
+                .andExpect(jsonPath("$.action").value("DELETE"))
+                .andExpect(jsonPath("$.attributes.product").doesNotExist())
+                .andRespond(withSuccess(idJson(), MediaType.APPLICATION_JSON));
+        Account account = account(null);
+        account.setMetadata(null);
+
+        assertEquals(jobId, adapter.publishDeleteAccount(account));
+
+        server.verify();
+    }
+
+    private Account account(String product) {
+        Account account = new Account();
+        account.setIdentifier("svc-compta-batch");
+        account.setType("service-account");
+        account.setProduct(product);
+        account.setMetadata(java.util.Map.of("owner", "alice"));
+        return account;
     }
 
     @Test

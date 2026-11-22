@@ -30,4 +30,14 @@ public class BusinessExceptionHandler  {
     public ResponseEntity<String> handleExistProductNameConstraintViolation(ExistProductNameConstraintViolationException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
+
+    @ExceptionHandler(InvalidAccountException.class)
+    public ResponseEntity<String> handleInvalidAccount(InvalidAccountException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(AccountConflictException.class)
+    public ResponseEntity<String> handleAccountConflict(AccountConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    }
 }
