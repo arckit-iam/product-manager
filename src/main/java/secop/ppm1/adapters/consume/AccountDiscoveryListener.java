@@ -36,6 +36,12 @@ public class AccountDiscoveryListener {
     @JsonIgnoreProperties(ignoreUnknown = true)
     record IdentityEvent(String eventType, String name, String displayName) {
         String identifier() {
+            // "name" est l'identifiant technique (uid LDAP, sAMAccountName) sauf s'il s'agit d'un DN ;
+            // "displayName" est alors la meilleure valeur disponible.
+            boolean usableName = name != null && !name.isBlank() && !name.contains("=");
+            if (usableName) {
+                return name;
+            }
             return displayName != null && !displayName.isBlank() ? displayName : name;
         }
     }

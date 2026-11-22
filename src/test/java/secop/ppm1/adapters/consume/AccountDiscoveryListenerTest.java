@@ -27,6 +27,13 @@ class AccountDiscoveryListenerTest {
     }
 
     @Test
+    void prefersTheTechnicalNameOverAHumanReadableDisplayName() {
+        listener.onIdentityEvent("{\"eventType\":\"CREATED\",\"name\":\"carol\",\"displayName\":\"Carol Petit\"}");
+
+        verify(manager).discover("carol", "CREATED");
+    }
+
+    @Test
     void fallsBackOnTheNameWhenThereIsNoDisplayName() {
         listener.onIdentityEvent("{\"eventType\":\"DELETED\",\"name\":\"svc-x-batch\",\"displayName\":\" \"}");
 
