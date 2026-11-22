@@ -26,7 +26,10 @@ public class ProfileEntity {
     private String description;
     private String scope;
 
-    private java.util.UUID jobId;
+    private java.time.LocalDate startDate;
+    private java.time.LocalDate endDate;
+    private java.util.UUID orderId;
+    private java.util.UUID endOrderId;
 
     public ProfileEntity addProductId(Long id){
         setProductId(id);

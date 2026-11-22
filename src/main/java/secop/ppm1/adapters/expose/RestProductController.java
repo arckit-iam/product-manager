@@ -79,6 +79,24 @@ public class RestProductController {
     }
 
 
+    @PutMapping("/{productName}/profiles/{profileName}/dates")
+    public ProductDto updateProfileDates(@PathVariable String productName, @PathVariable String profileName,
+            @RequestBody DatesRequest dates) {
+        return productDtoMapper.toDto(
+                productService.updateProfileDates(productName, profileName, dates.startDate(), dates.endDate()));
+    }
+
+    /** Annule ce qui est encore à venir pour le profil : sa création différée ou sa suppression planifiée. */
+    @PostMapping("/{productName}/profiles/{profileName}/cancel-pending")
+    public ProductDto cancelProfilePending(@PathVariable String productName, @PathVariable String profileName) {
+        return productDtoMapper.toDto(productService.cancelProfilePending(productName, profileName));
+    }
+
+    @DeleteMapping("/{productName}/profiles/{profileName}")
+    public ProductDto deleteProfile(@PathVariable String productName, @PathVariable String profileName) {
+        return productDtoMapper.toDto(productService.deleteProfileToProduct(productName, profileName));
+    }
+
     @PutMapping("/{productName}")
     public ProductDto updateProduct(@PathVariable String productName, @RequestBody ProductDto product) {
         return productDtoMapper.toDto(productService.updateProduct(productName,productDtoMapper.toDomain(product)));

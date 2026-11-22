@@ -3,6 +3,7 @@
 
 package secop.ppm1.domain.service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -21,9 +22,26 @@ public interface AccountManager {
 
     /**
      * Crée et provisionne un compte. Le type et le produit sont déduits de l'identifiant par les regex
-     * quand ils ne sont pas fournis.
+     * quand ils ne sont pas fournis. La création est différée à {@code startDate} ; la suppression est
+     * planifiée après {@code endDate} (dernier jour inclus). Dates facultatives.
      */
-    Account createAccount(String identifier, String typeName, String productName, Map<String, Object> metadata);
+    Account createAccount(String identifier, String typeName, String productName,
+            Map<String, Object> metadata, LocalDate startDate, LocalDate endDate);
+
+    /** Création immédiate, sans fin planifiée. */
+    default Account createAccount(String identifier, String typeName, String productName,
+            Map<String, Object> metadata) {
+        return createAccount(identifier, typeName, productName, metadata, null, null);
+    }
+
+    /** Change les dates de début et de fin d'un compte, en remplaçant ses ordres en attente. */
+    Account updateDates(String identifier, LocalDate startDate, LocalDate endDate);
+
+    /**
+     * Annule ce qui est encore à venir : la création différée (le compte est alors supprimé) ou, si le
+     * compte existe déjà, sa suppression planifiée.
+     */
+    void cancelPending(String identifier);
 
     Account updateMetadata(String identifier, Map<String, Object> metadata);
 

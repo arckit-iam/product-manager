@@ -3,6 +3,7 @@
 
 package secop.ppm1.adapters.provide;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +40,10 @@ public class AccountEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, Object> metadata = new HashMap<>();
 
-    private UUID jobId;
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private UUID orderId;
+    private UUID endOrderId;
 
     private OffsetDateTime createdAt;
 }

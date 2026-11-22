@@ -59,13 +59,26 @@ public class RestAccountController {
     @PostMapping("/accounts")
     public ResponseEntity<AccountDto> createAccount(@RequestBody CreateAccountRequest request) {
         AccountDto created = mapper.toDto(accountManager.createAccount(
-                request.identifier(), request.type(), request.product(), request.metadata()));
+                request.identifier(), request.type(), request.product(), request.metadata(),
+                request.startDate(), request.endDate()));
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/accounts/{identifier}/metadata")
     public AccountDto updateMetadata(@PathVariable String identifier, @RequestBody Map<String, Object> metadata) {
         return mapper.toDto(accountManager.updateMetadata(identifier, metadata));
+    }
+
+    @PutMapping("/accounts/{identifier}/dates")
+    public AccountDto updateDates(@PathVariable String identifier, @RequestBody DatesRequest dates) {
+        return mapper.toDto(accountManager.updateDates(identifier, dates.startDate(), dates.endDate()));
+    }
+
+    /** Annule ce qui est encore à venir : la création différée ou la suppression planifiée. */
+    @PostMapping("/accounts/{identifier}/cancel-pending")
+    public ResponseEntity<Void> cancelPending(@PathVariable String identifier) {
+        accountManager.cancelPending(identifier);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/accounts/{identifier}/product")

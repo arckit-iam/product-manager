@@ -150,7 +150,7 @@ class RestAccountControllerTest {
 
     @Test
     void publisherCreatesAnAccount() throws Exception {
-        when(manager.createAccount(eq("svc-compta-batch"), any(), any(), any())).thenReturn(account());
+        when(manager.createAccount(eq("svc-compta-batch"), any(), any(), any(), any(), any())).thenReturn(account());
 
         mvc.perform(post("/accounts").header("Authorization", bearer("publisher"))
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
@@ -180,7 +180,7 @@ class RestAccountControllerTest {
     @Test
     void mapsBusinessErrors() throws Exception {
         when(manager.getAccount("absent")).thenThrow(new secop.ppm1.domain.exception.NotFoundException("nope"));
-        when(manager.createAccount(any(), any(), any(), any()))
+        when(manager.createAccount(any(), any(), any(), any(), any(), any()))
                 .thenThrow(new secop.ppm1.domain.exception.AccountConflictException("dup"));
         when(manager.correlate(eq("bad"), any()))
                 .thenThrow(new secop.ppm1.domain.exception.InvalidAccountException("invalid"));
@@ -194,4 +194,30 @@ class RestAccountControllerTest {
                         .contentType(MediaType.APPLICATION_JSON).content("{\"product\":\"x\"}"))
                 .andExpect(status().isBadRequest());
     }
-}
+
+    @Test
+    void publisherChangesTheDatesAndCancelsWhatIsPending() throws Exception {
+        when(manager.updateDates("a", java.time.LocalDate.of(2026, 7, 1), null)).thenReturn(account());
+
+        mvc.perform(put("/accounts/a/dates").header("Authorization", bearer("publisher"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"startDate\":\"2026-07-01\"}"))
+                .andExpect(status().isOk());
+        mvc.perform(post("/accounts/a/cancel-pending").header("Authorization", bearer("publisher")))
+                .andExpect(status().isNoContent());
+        mvc.perform(post("/accounts/a/cancel-pending").header("Authorization", bearer("reader")))
+                .andExpect(status().isForbidden());
+        verify(manager).cancelPending("a");
+    }
+
+    @Test
+    void createPassesTheDates() throws Exception {
+        when(manager.createAccount(any(), any(), any(), any(), any(), any())).thenReturn(account());
+
+        mvc.perform(post("/accounts").header("Authorization", bearer("publisher"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"identifier\":\"svc-compta-batch\",\"startDate\":\"2026-07-01\",\"endDate\":\"2026-07-31\"}"))
+                .andExpect(status().isCreated());
+
+        verify(manager).createAccount("svc-compta-batch", null, null, null,
+                java.time.LocalDate.of(2026, 7, 1), java.time.LocalDate.of(2026, 7, 31));
+    }}

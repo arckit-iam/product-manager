@@ -7,24 +7,33 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import secop.ppm1.adapters.provide.HexaProductService;
+import secop.ppm1.domain.exception.AccountConflictException;
 import secop.ppm1.domain.exception.ExistProductNameConstraintViolationException;
+import secop.ppm1.domain.exception.InvalidAccountException;
 import secop.ppm1.domain.exception.NotFoundException;
 import secop.ppm1.domain.exception.UniqueProductNameConstraintViolationException;
 import secop.ppm1.domain.model.Product;
 import secop.ppm1.domain.model.Profile;
-import secop.ppm1.domain.port.JobPublisher;
+import secop.ppm1.domain.model.ProvisioningOrder;
+import secop.ppm1.domain.port.OrderPublisher;
 import secop.ppm1.domain.port.ProductProvider;
 import secop.ppm1.domain.port.ProfileProvider;
+import secop.ppm1.domain.service.OrderSchedule;
 
 public class HexaProductServiceTest {
 
@@ -35,9 +44,8 @@ public class HexaProductServiceTest {
     private ProfileProvider profileProvider;
 
     @Mock
-    private JobPublisher jobPublisher;
+    private OrderPublisher orderPublisher;
 
-    @InjectMocks
     private HexaProductService hexaProductService;
 
     private Product testProduct;
@@ -46,6 +54,9 @@ public class HexaProductServiceTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
+        OrderSchedule schedule = new OrderSchedule(
+                Clock.fixed(Instant.parse("2026-06-15T10:00:00Z"), ZoneOffset.UTC), ZoneOffset.UTC);
+        hexaProductService = new HexaProductService(productProvider, profileProvider, orderPublisher, schedule);
         
         testProduct = new Product();
         testProduct.setName("Test Product");
@@ -220,11 +231,9 @@ public class HexaProductServiceTest {
 
     @Test
     public void testAddProfileToProduct() {
-        java.util.UUID jobId = java.util.UUID.randomUUID();
         List<Profile> profiles = Arrays.asList(testProfile);
         testProduct.setProfiles(profiles);
 
-        when(jobPublisher.publishCreateEntitlement("Test Product", testProfile)).thenReturn(jobId);
         when(profileProvider.save(testProfile, "Test Product")).thenReturn(testProfile);
         when(productProvider.findByProductName("Test Product")).thenReturn(testProduct);
         when(profileProvider.getProfilesByProduct("Test Product")).thenReturn(profiles);
@@ -234,31 +243,208 @@ public class HexaProductServiceTest {
         assertNotNull(result);
         assertEquals("Test Product", result.getName());
         assertEquals(1, result.getProfiles().size());
-        verify(jobPublisher, times(1)).publishCreateEntitlement("Test Product", testProfile);
+        ArgumentCaptor<ProvisioningOrder> order = ArgumentCaptor.forClass(ProvisioningOrder.class);
+        verify(orderPublisher, times(1)).submit(order.capture());
+        assertEquals(ProvisioningOrder.Action.CREATE, order.getValue().action());
+        assertEquals(ProvisioningOrder.Target.ENTITLEMENT, order.getValue().target());
+        assertEquals("profile:Test Product:Test Profile", order.getValue().correlationId());
+        assertEquals(order.getValue().id(), testProfile.getOrderId());
+        assertNull(testProfile.getEndOrderId());
         verify(profileProvider, times(1)).save(testProfile, "Test Product");
-        verify(productProvider, times(1)).findByProductName("Test Product");
-        verify(profileProvider, times(1)).getProfilesByProduct("Test Product");
     }
 
     @Test
-    public void testDeleteProfileToProduct() {
-        List<Profile> profiles = Arrays.asList(); // Liste vide après suppression
-        testProduct.setProfiles(profiles);
-
-        when(jobPublisher.publishDeleteEntitlement("Test Product", testProfile)).thenReturn(java.util.UUID.randomUUID());
-        doNothing().when(profileProvider).deleteProfile(testProfile);
+    public void testAddProfileSchedulesTheCreationAndTheEnd() {
+        testProfile.setStartDate(LocalDate.of(2026, 7, 1));
+        testProfile.setEndDate(LocalDate.of(2026, 7, 31));
         when(productProvider.findByProductName("Test Product")).thenReturn(testProduct);
-        when(profileProvider.getProfilesByProduct("Test Product")).thenReturn(profiles);
 
-        Product result = hexaProductService.deleteProfileToProduct("Test Product", testProfile);
+        hexaProductService.addProfileToProduct("Test Product", testProfile);
+
+        ArgumentCaptor<ProvisioningOrder> orders = ArgumentCaptor.forClass(ProvisioningOrder.class);
+        verify(orderPublisher, times(2)).submit(orders.capture());
+        ProvisioningOrder create = orders.getAllValues().get(0);
+        ProvisioningOrder end = orders.getAllValues().get(1);
+        assertEquals(Instant.parse("2026-07-01T00:00:00Z"), create.executeAt().toInstant());
+        assertEquals(Instant.parse("2026-08-01T00:00:00Z"), end.executeAt().toInstant());
+        assertEquals(ProvisioningOrder.Action.DELETE, end.action());
+        assertEquals("profile:Test Product:Test Profile:end", end.correlationId());
+        assertEquals(create.id(), testProfile.getOrderId());
+        assertEquals(end.id(), testProfile.getEndOrderId());
+    }
+
+    @Test
+    public void testAddProfileRejectsInconsistentDates() {
+        testProfile.setStartDate(LocalDate.of(2026, 7, 10));
+        testProfile.setEndDate(LocalDate.of(2026, 7, 1));
+        assertThrows(InvalidAccountException.class,
+                () -> hexaProductService.addProfileToProduct("Test Product", testProfile));
+
+        testProfile.setStartDate(null);
+        testProfile.setEndDate(LocalDate.of(2026, 6, 14));
+        assertThrows(InvalidAccountException.class,
+                () -> hexaProductService.addProfileToProduct("Test Product", testProfile));
+
+        verify(orderPublisher, never()).submit(any());
+    }
+
+    @Test
+    public void testAddProfileCancelsTheCreationWhenTheEndCannotBeScheduled() {
+        testProfile.setEndDate(LocalDate.of(2026, 7, 31));
+        org.mockito.Mockito.doNothing().doThrow(new IllegalStateException("down")).when(orderPublisher)
+                .submit(any(ProvisioningOrder.class));
+
+        assertThrows(IllegalStateException.class,
+                () -> hexaProductService.addProfileToProduct("Test Product", testProfile));
+
+        verify(orderPublisher).cancel(testProfile.getOrderId());
+        verify(profileProvider, never()).save(any(Profile.class), anyString());
+    }
+
+    private void stored(Profile profile) {
+        when(productProvider.existeByName("Test Product")).thenReturn(true);
+        when(profileProvider.getProfileByNameAndProduct(profile.getName(), "Test Product")).thenReturn(profile);
+        when(productProvider.findByProductName("Test Product")).thenReturn(testProduct);
+        when(profileProvider.getProfilesByProduct("Test Product")).thenReturn(List.of());
+    }
+
+    @Test
+    public void testDeleteActiveProfileOrdersItsDeletionAndCancelsTheEnd() {
+        UUID endOrder = UUID.randomUUID();
+        testProfile.setEndOrderId(endOrder);
+        stored(testProfile);
+
+        Product result = hexaProductService.deleteProfileToProduct("Test Product", "Test Profile");
 
         assertNotNull(result);
-        assertEquals("Test Product", result.getName());
-        assertEquals(0, result.getProfiles().size());
-        verify(jobPublisher, times(1)).publishDeleteEntitlement("Test Product", testProfile);
-        verify(profileProvider, times(1)).deleteProfile(testProfile);
-        verify(productProvider, times(1)).findByProductName("Test Product");
-        verify(profileProvider, times(1)).getProfilesByProduct("Test Product");
+        verify(orderPublisher).cancel(endOrder);
+        ArgumentCaptor<ProvisioningOrder> order = ArgumentCaptor.forClass(ProvisioningOrder.class);
+        verify(orderPublisher).submit(order.capture());
+        assertEquals(ProvisioningOrder.Action.DELETE, order.getValue().action());
+        assertEquals("profile:Test Product:Test Profile:delete", order.getValue().correlationId());
+        verify(profileProvider).deleteProfile("Test Product", "Test Profile");
+    }
+
+    @Test
+    public void testDeleteProfileNotYetCreatedOnlyCancelsItsOrder() {
+        UUID createOrder = UUID.randomUUID();
+        testProfile.setStartDate(LocalDate.of(2026, 7, 1));
+        testProfile.setOrderId(createOrder);
+        stored(testProfile);
+
+        hexaProductService.deleteProfileToProduct("Test Product", "Test Profile");
+
+        verify(orderPublisher).cancel(createOrder);
+        verify(orderPublisher, never()).submit(any());
+        verify(profileProvider).deleteProfile("Test Product", "Test Profile");
+    }
+
+    @Test
+    public void testDeleteExpiredProfileOrdersNothing() {
+        testProfile.setEndDate(LocalDate.of(2026, 6, 1));
+        stored(testProfile);
+
+        hexaProductService.deleteProfileToProduct("Test Product", "Test Profile");
+
+        verify(orderPublisher, never()).submit(any());
+        verify(profileProvider).deleteProfile("Test Product", "Test Profile");
+    }
+
+    @Test
+    public void testDeleteUnknownProfileOrProduct() {
+        when(productProvider.existeByName("Test Product")).thenReturn(true);
+        assertThrows(NotFoundException.class,
+                () -> hexaProductService.deleteProfileToProduct("Test Product", "absent"));
+        assertThrows(NotFoundException.class,
+                () -> hexaProductService.deleteProfileToProduct("Ghost", "Test Profile"));
+    }
+
+    @Test
+    public void testUpdateDatesOfAPendingProfileReplacesItsOrders() {
+        UUID oldCreate = UUID.randomUUID();
+        UUID oldEnd = UUID.randomUUID();
+        testProfile.setStartDate(LocalDate.of(2026, 7, 1));
+        testProfile.setEndDate(LocalDate.of(2026, 7, 31));
+        testProfile.setOrderId(oldCreate);
+        testProfile.setEndOrderId(oldEnd);
+        stored(testProfile);
+
+        hexaProductService.updateProfileDates("Test Product", "Test Profile", LocalDate.of(2026, 8, 1),
+                LocalDate.of(2026, 8, 31));
+
+        verify(orderPublisher).cancel(oldCreate);
+        verify(orderPublisher).cancel(oldEnd);
+        verify(orderPublisher, times(2)).submit(any(ProvisioningOrder.class));
+        assertEquals(LocalDate.of(2026, 8, 1), testProfile.getStartDate());
+        verify(profileProvider).save(testProfile, "Test Product");
+    }
+
+    @Test
+    public void testUpdateDatesRemovesTheEnd() {
+        UUID oldEnd = UUID.randomUUID();
+        testProfile.setEndDate(LocalDate.of(2026, 7, 31));
+        testProfile.setEndOrderId(oldEnd);
+        stored(testProfile);
+
+        hexaProductService.updateProfileDates("Test Product", "Test Profile", null, null);
+
+        verify(orderPublisher).cancel(oldEnd);
+        verify(orderPublisher, never()).submit(any());
+        assertNull(testProfile.getEndOrderId());
+        assertNull(testProfile.getEndDate());
+    }
+
+    @Test
+    public void testUpdateDatesRefusesToMoveAStartThatIsAlreadyReachedOrAnExpiredProfile() {
+        testProfile.setStartDate(LocalDate.of(2026, 6, 1));
+        stored(testProfile);
+        assertThrows(InvalidAccountException.class, () -> hexaProductService.updateProfileDates("Test Product",
+                "Test Profile", LocalDate.of(2026, 6, 20), null));
+
+        testProfile.setEndDate(LocalDate.of(2026, 6, 10));
+        assertThrows(AccountConflictException.class, () -> hexaProductService.updateProfileDates("Test Product",
+                "Test Profile", LocalDate.of(2026, 6, 1), null));
+    }
+
+    @Test
+    public void testCancelPendingCreationDeletesTheProfile() {
+        UUID createOrder = UUID.randomUUID();
+        UUID endOrder = UUID.randomUUID();
+        testProfile.setStartDate(LocalDate.of(2026, 7, 1));
+        testProfile.setEndDate(LocalDate.of(2026, 7, 31));
+        testProfile.setOrderId(createOrder);
+        testProfile.setEndOrderId(endOrder);
+        stored(testProfile);
+
+        hexaProductService.cancelProfilePending("Test Product", "Test Profile");
+
+        verify(orderPublisher).cancel(createOrder);
+        verify(orderPublisher).cancel(endOrder);
+        verify(profileProvider).deleteProfile("Test Product", "Test Profile");
+    }
+
+    @Test
+    public void testCancelPendingEndKeepsTheProfile() {
+        UUID endOrder = UUID.randomUUID();
+        testProfile.setEndDate(LocalDate.of(2026, 7, 31));
+        testProfile.setEndOrderId(endOrder);
+        stored(testProfile);
+
+        hexaProductService.cancelProfilePending("Test Product", "Test Profile");
+
+        verify(orderPublisher).cancel(endOrder);
+        assertNull(testProfile.getEndDate());
+        assertNull(testProfile.getEndOrderId());
+        verify(profileProvider).save(testProfile, "Test Product");
+        verify(profileProvider, never()).deleteProfile(anyString(), anyString());
+    }
+
+    @Test
+    public void testCancelPendingWithNothingPendingConflicts() {
+        stored(testProfile);
+
+        assertThrows(AccountConflictException.class,
+                () -> hexaProductService.cancelProfilePending("Test Product", "Test Profile"));
     }
 
     @Test

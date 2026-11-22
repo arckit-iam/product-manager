@@ -13,6 +13,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,18 +36,18 @@ import secop.ppm1.domain.model.AccountSource;
 import secop.ppm1.domain.model.AccountType;
 import secop.ppm1.domain.model.MetadataField;
 import secop.ppm1.domain.model.MetadataType;
+import secop.ppm1.domain.model.ProvisioningOrder;
 import secop.ppm1.domain.port.AccountProvider;
 import secop.ppm1.domain.port.AccountTypeCatalog;
-import secop.ppm1.domain.port.JobPublisher;
+import secop.ppm1.domain.port.OrderPublisher;
 import secop.ppm1.domain.port.ProductProvider;
+import secop.ppm1.domain.service.OrderSchedule;
 
 class HexaAccountServiceTest {
 
-    private final UUID jobId = UUID.randomUUID();
-
     private AccountProvider accounts;
     private ProductProvider products;
-    private JobPublisher publisher;
+    private OrderPublisher publisher;
     private HexaAccountService service;
 
     private final AccountType serviceType = new AccountType("service-account", AccountKind.NON_USER,
@@ -52,11 +56,14 @@ class HexaAccountServiceTest {
     private final AccountType employeeType = new AccountType("employee", AccountKind.USER,
             Pattern.compile("(?<identity>[a-z]+)"), List.of());
 
+    private final OrderSchedule schedule = new OrderSchedule(
+            Clock.fixed(Instant.parse("2026-06-15T10:00:00Z"), ZoneOffset.UTC), ZoneOffset.UTC);
+
     @BeforeEach
     void setUp() {
         accounts = mock(AccountProvider.class);
         products = mock(ProductProvider.class);
-        publisher = mock(JobPublisher.class);
+        publisher = mock(OrderPublisher.class);
         AccountTypeCatalog catalog = new AccountTypeCatalog() {
             @Override
             public List<AccountType> findAll() {
@@ -68,9 +75,8 @@ class HexaAccountServiceTest {
                 return findAll().stream().filter(t -> t.name().equals(name)).findFirst();
             }
         };
-        service = new HexaAccountService(accounts, products, catalog, publisher);
+        service = new HexaAccountService(accounts, products, catalog, publisher, schedule);
         when(accounts.save(any(Account.class))).thenAnswer(i -> i.getArgument(0));
-        when(publisher.publishCreateAccount(any(Account.class))).thenReturn(jobId);
         when(products.existeByName("compta")).thenReturn(true);
     }
 
@@ -106,8 +112,13 @@ class HexaAccountServiceTest {
         assertEquals("service-account", created.getType());
         assertEquals("compta", created.getProduct());
         assertEquals(AccountSource.API, created.getSource());
-        assertEquals(jobId, created.getJobId());
-        verify(publisher).publishCreateAccount(any(Account.class));
+        ArgumentCaptor<ProvisioningOrder> order = ArgumentCaptor.forClass(ProvisioningOrder.class);
+        verify(publisher).submit(order.capture());
+        assertEquals(order.getValue().id(), created.getOrderId());
+        assertEquals(ProvisioningOrder.Action.CREATE, order.getValue().action());
+        assertEquals(ProvisioningOrder.Target.IDENTITY, order.getValue().target());
+        assertEquals("account:svc-compta-batch", order.getValue().correlationId());
+        assertEquals(Instant.parse("2026-06-15T10:00:00Z"), order.getValue().executeAt().toInstant());
     }
 
     @Test
@@ -132,7 +143,7 @@ class HexaAccountServiceTest {
                 () -> service.createAccount("zzz", "service-account", "compta", Map.of("owner", "a")));
         assertThrows(InvalidAccountException.class,
                 () -> service.createAccount("svc-compta-batch", null, null, Map.of()));
-        verify(publisher, never()).publishCreateAccount(any());
+        verify(publisher, never()).submit(any());
     }
 
     @Test
@@ -148,7 +159,7 @@ class HexaAccountServiceTest {
             public Optional<AccountType> findByName(String name) {
                 return Optional.empty();
             }
-        }, publisher);
+        }, publisher, schedule);
 
         assertThrows(InvalidAccountException.class, () -> other.createAccount("free-x", null, null, null));
         assertThrows(NotFoundException.class, () -> other.createAccount("svc-ghost-batch", null, null, Map.of("owner", "a")));
@@ -207,14 +218,165 @@ class HexaAccountServiceTest {
     }
 
     @Test
-    void deleteDeprovisionsThenRemoves() {
+    void deleteOrdersTheDeletionThenRemoves() {
         Account account = stored("svc-compta-batch", "compta");
+        UUID endOrder = UUID.randomUUID();
+        account.setEndOrderId(endOrder);
 
         service.deleteAccount("svc-compta-batch");
 
-        verify(publisher).publishDeleteAccount(account);
+        verify(publisher).cancel(endOrder);
+        ArgumentCaptor<ProvisioningOrder> order = ArgumentCaptor.forClass(ProvisioningOrder.class);
+        verify(publisher).submit(order.capture());
+        assertEquals(ProvisioningOrder.Action.DELETE, order.getValue().action());
+        assertEquals("account:svc-compta-batch:delete", order.getValue().correlationId());
         verify(accounts).deleteByIdentifier("svc-compta-batch");
         assertThrows(NotFoundException.class, () -> service.deleteAccount("absent"));
+    }
+
+    @Test
+    void deleteOfAnAccountNotYetCreatedOnlyCancelsItsOrder() {
+        Account account = stored("svc-compta-batch", "compta");
+        UUID createOrder = UUID.randomUUID();
+        account.setStartDate(LocalDate.of(2026, 7, 1));
+        account.setOrderId(createOrder);
+
+        service.deleteAccount("svc-compta-batch");
+
+        verify(publisher).cancel(createOrder);
+        verify(publisher, never()).submit(any());
+        verify(accounts).deleteByIdentifier("svc-compta-batch");
+    }
+
+    @Test
+    void deleteOfAnExpiredAccountOrdersNothing() {
+        Account account = stored("svc-compta-batch", "compta");
+        account.setEndDate(LocalDate.of(2026, 6, 1));
+
+        service.deleteAccount("svc-compta-batch");
+
+        verify(publisher, never()).submit(any());
+        verify(accounts).deleteByIdentifier("svc-compta-batch");
+    }
+
+    @Test
+    void createSchedulesTheCreationAndTheEnd() {
+        Account created = service.createAccount("svc-compta-batch", null, null, Map.of("owner", "a"),
+                LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 31));
+
+        ArgumentCaptor<ProvisioningOrder> orders = ArgumentCaptor.forClass(ProvisioningOrder.class);
+        verify(publisher, org.mockito.Mockito.times(2)).submit(orders.capture());
+        ProvisioningOrder create = orders.getAllValues().get(0);
+        ProvisioningOrder end = orders.getAllValues().get(1);
+        assertEquals(Instant.parse("2026-07-01T00:00:00Z"), create.executeAt().toInstant());
+        assertEquals(Instant.parse("2026-08-01T00:00:00Z"), end.executeAt().toInstant());
+        assertEquals("account:svc-compta-batch:end", end.correlationId());
+        assertEquals(create.id(), created.getOrderId());
+        assertEquals(end.id(), created.getEndOrderId());
+    }
+
+    @Test
+    void createRejectsInconsistentDates() {
+        assertThrows(InvalidAccountException.class, () -> service.createAccount("svc-compta-batch", null, null,
+                Map.of("owner", "a"), LocalDate.of(2026, 7, 10), LocalDate.of(2026, 7, 1)));
+        assertThrows(InvalidAccountException.class, () -> service.createAccount("svc-compta-batch", null, null,
+                Map.of("owner", "a"), null, LocalDate.of(2026, 6, 14)));
+        verify(publisher, never()).submit(any());
+    }
+
+    @Test
+    void createCancelsTheCreationWhenTheEndCannotBeScheduled() {
+        org.mockito.Mockito.doNothing().doThrow(new IllegalStateException("down")).when(publisher)
+                .submit(any(ProvisioningOrder.class));
+
+        assertThrows(IllegalStateException.class, () -> service.createAccount("svc-compta-batch", null, null,
+                Map.of("owner", "a"), null, LocalDate.of(2026, 7, 31)));
+
+        verify(publisher).cancel(any(UUID.class));
+        verify(accounts, never()).save(any());
+    }
+
+    @Test
+    void updateDatesOfAPendingAccountReplacesItsOrders() {
+        Account account = stored("svc-compta-batch", "compta");
+        UUID oldCreate = UUID.randomUUID();
+        UUID oldEnd = UUID.randomUUID();
+        account.setStartDate(LocalDate.of(2026, 7, 1));
+        account.setEndDate(LocalDate.of(2026, 7, 31));
+        account.setOrderId(oldCreate);
+        account.setEndOrderId(oldEnd);
+
+        service.updateDates("svc-compta-batch", LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31));
+
+        verify(publisher).cancel(oldCreate);
+        verify(publisher).cancel(oldEnd);
+        verify(publisher, org.mockito.Mockito.times(2)).submit(any(ProvisioningOrder.class));
+        assertEquals(LocalDate.of(2026, 8, 1), account.getStartDate());
+    }
+
+    @Test
+    void updateDatesCanRemoveTheEnd() {
+        Account account = stored("svc-compta-batch", "compta");
+        UUID oldEnd = UUID.randomUUID();
+        account.setEndDate(LocalDate.of(2026, 7, 31));
+        account.setEndOrderId(oldEnd);
+
+        service.updateDates("svc-compta-batch", null, null);
+
+        verify(publisher).cancel(oldEnd);
+        verify(publisher, never()).submit(any());
+        assertNull(account.getEndOrderId());
+    }
+
+    @Test
+    void updateDatesRefusesAStartAlreadyReachedOrAnExpiredAccount() {
+        Account account = stored("svc-compta-batch", "compta");
+        account.setStartDate(LocalDate.of(2026, 6, 1));
+        assertThrows(InvalidAccountException.class,
+                () -> service.updateDates("svc-compta-batch", LocalDate.of(2026, 6, 20), null));
+
+        account.setEndDate(LocalDate.of(2026, 6, 10));
+        assertThrows(AccountConflictException.class,
+                () -> service.updateDates("svc-compta-batch", LocalDate.of(2026, 6, 1), null));
+    }
+
+    @Test
+    void cancelPendingCreationRemovesTheAccount() {
+        Account account = stored("svc-compta-batch", "compta");
+        UUID createOrder = UUID.randomUUID();
+        UUID endOrder = UUID.randomUUID();
+        account.setStartDate(LocalDate.of(2026, 7, 1));
+        account.setOrderId(createOrder);
+        account.setEndOrderId(endOrder);
+
+        service.cancelPending("svc-compta-batch");
+
+        verify(publisher).cancel(createOrder);
+        verify(publisher).cancel(endOrder);
+        verify(accounts).deleteByIdentifier("svc-compta-batch");
+    }
+
+    @Test
+    void cancelPendingEndKeepsTheAccount() {
+        Account account = stored("svc-compta-batch", "compta");
+        UUID endOrder = UUID.randomUUID();
+        account.setEndDate(LocalDate.of(2026, 7, 31));
+        account.setEndOrderId(endOrder);
+
+        service.cancelPending("svc-compta-batch");
+
+        verify(publisher).cancel(endOrder);
+        assertNull(account.getEndDate());
+        assertNull(account.getEndOrderId());
+        verify(accounts).save(account);
+        verify(accounts, never()).deleteByIdentifier(anyString());
+    }
+
+    @Test
+    void cancelPendingWithNothingPendingConflicts() {
+        stored("svc-compta-batch", "compta");
+
+        assertThrows(AccountConflictException.class, () -> service.cancelPending("svc-compta-batch"));
     }
 
     @Test
@@ -227,7 +389,7 @@ class HexaAccountServiceTest {
         assertEquals("compta", saved.getAllValues().get(0).getProduct());
         assertNull(saved.getAllValues().get(1).getProduct());
         assertEquals(AccountSource.DISCOVERED, saved.getAllValues().get(0).getSource());
-        verify(publisher, never()).publishCreateAccount(any());
+        verify(publisher, never()).submit(any());
     }
 
     @Test

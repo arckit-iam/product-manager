@@ -10,6 +10,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -22,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * peu avant son expiration. Un seul jeton est partagé par tous les appels.
  */
 @Component
+@ConditionalOnProperty(name = "arc.orders.channel", havingValue = "api")
 public class ArcAuthTokenProvider {
 
     /** Le jeton est renouvelé un peu avant son expiration pour ne jamais en présenter un périmé. */

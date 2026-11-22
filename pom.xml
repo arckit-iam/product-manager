@@ -220,6 +220,11 @@
 							<goal>check</goal>
 						</goals>
 						<configuration>
+							<excludes>
+								<exclude>**/*MapperImpl.class</exclude>
+								<exclude>**/*Impl_.class</exclude>
+								<exclude>**/ProfileApplication.class</exclude>
+							</excludes>
 							<rules>
 								<rule>
 									<element>CLASS</element>

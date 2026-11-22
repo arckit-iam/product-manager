@@ -12,5 +12,5 @@ public interface ProfileProvider {
     Profile save(Profile profile,String productName);
     Profile getProfileByNameAndProduct(String profileName, String productName);
     List<Profile> getProfilesByProduct(String productName);
-    void deleteProfile(Profile profile);
+    void deleteProfile(String productName, String profileName);
 }

@@ -40,7 +40,10 @@ public class JpaAccountProvider implements AccountProvider {
         entity.setProductId(resolveProductId(account.getProduct()));
         entity.setSource(account.getSource().name());
         entity.setMetadata(account.getMetadata() == null ? new HashMap<>() : new HashMap<>(account.getMetadata()));
-        entity.setJobId(account.getJobId());
+        entity.setStartDate(account.getStartDate());
+        entity.setEndDate(account.getEndDate());
+        entity.setOrderId(account.getOrderId());
+        entity.setEndOrderId(account.getEndOrderId());
         if (entity.getCreatedAt() == null) {
             entity.setCreatedAt(account.getCreatedAt() != null ? account.getCreatedAt() : OffsetDateTime.now());
         }
@@ -102,7 +105,10 @@ public class JpaAccountProvider implements AccountProvider {
                 : productRepository.findById(entity.getProductId()).map(ProductEntity::getName).orElse(null));
         account.setSource(AccountSource.valueOf(entity.getSource()));
         account.setMetadata(entity.getMetadata() == null ? new HashMap<>() : new HashMap<>(entity.getMetadata()));
-        account.setJobId(entity.getJobId());
+        account.setStartDate(entity.getStartDate());
+        account.setEndDate(entity.getEndDate());
+        account.setOrderId(entity.getOrderId());
+        account.setEndOrderId(entity.getEndOrderId());
         account.setCreatedAt(entity.getCreatedAt());
         return account;
     }

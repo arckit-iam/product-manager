@@ -32,17 +32,27 @@ public class JpaProfileProvider implements ProfileProvider{
     @Override
     public Profile save(Profile profile,String productName) {
         ProfileEntity profileEntity = profileEntityMapper.toEntity(profile);
-        profileEntity.setProductId(productRepository.findByName(productName).getId());
+        Long productId = productRepository.findByName(productName).getId();
+        profileEntity.setProductId(productId);
+        ProfileEntity existing = profileRepository.findOneByNameAndProductId(profile.getName(), productId);
+        if (existing != null) {
+            profileEntity.setId(existing.getId());
+        }
         return profileEntityMapper.toDomain(profileRepository.saveAndFlush(profileEntity));
     }
 
 
 
     @Override
-    public void deleteProfile(Profile profile) {
-       
-        profileRepository.delete(profileEntityMapper.toEntity(profile));
-                
+    public void deleteProfile(String productName, String profileName) {
+        ProductEntity product = productRepository.findByName(productName);
+        if (product == null) {
+            return;
+        }
+        ProfileEntity entity = profileRepository.findOneByNameAndProductId(profileName, product.getId());
+        if (entity != null) {
+            profileRepository.delete(entity);
+        }
     }
     @Override
     public Profile getProfileByNameAndProduct(String profileName, String productName) {

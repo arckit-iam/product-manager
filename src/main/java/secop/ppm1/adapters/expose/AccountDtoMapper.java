@@ -14,7 +14,8 @@ public class AccountDtoMapper {
     public AccountDto toDto(Account account) {
         return new AccountDto(account.getIdentifier(), account.getType(), account.getProduct(),
                 account.getSource() == null ? null : account.getSource().name(), account.getMetadata(),
-                account.getJobId(), account.getCreatedAt());
+                account.getStartDate(), account.getEndDate(), account.getOrderId(), account.getEndOrderId(),
+                account.getCreatedAt());
     }
 
     public AccountTypeDto toDto(AccountType type) {

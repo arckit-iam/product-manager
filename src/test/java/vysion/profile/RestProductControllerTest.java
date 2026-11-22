@@ -313,4 +313,38 @@ public class RestProductControllerTest {
         verify(productService).updateProduct(productName, productDomain);
         verify(productDtoMapper).toDto(testProduct);
     }
-}
+
+    @Test
+    void testUpdateProfileDates() throws Exception {
+        when(productService.updateProfileDates("Test Product", "Test Profile",
+                java.time.LocalDate.of(2026, 7, 1), java.time.LocalDate.of(2026, 7, 31))).thenReturn(testProduct);
+        when(productDtoMapper.toDto(testProduct)).thenReturn(testProductDto);
+
+        mockMvc.perform(put("/products/{p}/profiles/{n}/dates", "Test Product", "Test Profile")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"startDate\":\"2026-07-01\",\"endDate\":\"2026-07-31\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Test Product"));
+    }
+
+    @Test
+    void testCancelProfilePending() throws Exception {
+        when(productService.cancelProfilePending("Test Product", "Test Profile")).thenReturn(testProduct);
+        when(productDtoMapper.toDto(testProduct)).thenReturn(testProductDto);
+
+        mockMvc.perform(post("/products/{p}/profiles/{n}/cancel-pending", "Test Product", "Test Profile"))
+                .andExpect(status().isOk());
+
+        verify(productService).cancelProfilePending("Test Product", "Test Profile");
+    }
+
+    @Test
+    void testDeleteProfile() throws Exception {
+        when(productService.deleteProfileToProduct("Test Product", "Test Profile")).thenReturn(testProduct);
+        when(productDtoMapper.toDto(testProduct)).thenReturn(testProductDto);
+
+        mockMvc.perform(delete("/products/{p}/profiles/{n}", "Test Product", "Test Profile"))
+                .andExpect(status().isOk());
+
+        verify(productService).deleteProfileToProduct("Test Product", "Test Profile");
+    }}

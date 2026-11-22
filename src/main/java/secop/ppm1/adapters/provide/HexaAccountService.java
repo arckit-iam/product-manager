@@ -3,11 +3,14 @@
 
 package secop.ppm1.adapters.provide;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,11 +23,13 @@ import secop.ppm1.domain.model.AccountKind;
 import secop.ppm1.domain.model.AccountMatch;
 import secop.ppm1.domain.model.AccountSource;
 import secop.ppm1.domain.model.AccountType;
+import secop.ppm1.domain.model.ProvisioningOrder;
 import secop.ppm1.domain.port.AccountProvider;
 import secop.ppm1.domain.port.AccountTypeCatalog;
-import secop.ppm1.domain.port.JobPublisher;
+import secop.ppm1.domain.port.OrderPublisher;
 import secop.ppm1.domain.port.ProductProvider;
 import secop.ppm1.domain.service.AccountManager;
+import secop.ppm1.domain.service.OrderSchedule;
 
 @Service
 public class HexaAccountService implements AccountManager {
@@ -34,15 +39,17 @@ public class HexaAccountService implements AccountManager {
     private final AccountProvider accountProvider;
     private final ProductProvider productProvider;
     private final AccountTypeCatalog catalog;
-    private final JobPublisher jobPublisher;
+    private final OrderPublisher orderPublisher;
+    private final OrderSchedule schedule;
 
     @Autowired
     HexaAccountService(AccountProvider accountProvider, ProductProvider productProvider,
-            AccountTypeCatalog catalog, JobPublisher jobPublisher) {
+            AccountTypeCatalog catalog, OrderPublisher orderPublisher, OrderSchedule schedule) {
         this.accountProvider = accountProvider;
         this.productProvider = productProvider;
         this.catalog = catalog;
-        this.jobPublisher = jobPublisher;
+        this.orderPublisher = orderPublisher;
+        this.schedule = schedule;
     }
 
     @Override
@@ -63,7 +70,7 @@ public class HexaAccountService implements AccountManager {
 
     @Override
     public Account createAccount(String identifier, String typeName, String productName,
-            Map<String, Object> metadata) {
+            Map<String, Object> metadata, LocalDate startDate, LocalDate endDate) {
         if (identifier == null || identifier.isBlank()) {
             throw new InvalidAccountException("The account identifier is required");
         }
@@ -79,6 +86,7 @@ public class HexaAccountService implements AccountManager {
             throw new NotFoundException("The product does not exist: " + product);
         }
         match.type().validateMetadata(metadata);
+        validateDates(startDate, endDate);
 
         Account account = new Account();
         account.setIdentifier(identifier);
@@ -86,9 +94,48 @@ public class HexaAccountService implements AccountManager {
         account.setProduct(product);
         account.setSource(AccountSource.API);
         account.setMetadata(metadata == null ? new HashMap<>() : new HashMap<>(metadata));
-        account.setJobId(jobPublisher.publishCreateAccount(account));
+        account.setStartDate(startDate);
+        account.setEndDate(endDate);
+        scheduleCreation(account);
+        if (endDate != null) {
+            try {
+                scheduleEnd(account);
+            } catch (RuntimeException e) {
+                orderPublisher.cancel(account.getOrderId());
+                throw e;
+            }
+        }
         account.setCreatedAt(OffsetDateTime.now());
         return accountProvider.save(account);
+    }
+
+    private void validateDates(LocalDate startDate, LocalDate endDate) {
+        if (endDate != null && startDate != null && endDate.isBefore(startDate)) {
+            throw new InvalidAccountException("The end date cannot be before the start date");
+        }
+        if (endDate != null && endDate.isBefore(schedule.today())) {
+            throw new InvalidAccountException("The end date cannot be in the past");
+        }
+    }
+
+    private void scheduleCreation(Account account) {
+        ProvisioningOrder order = ProvisioningOrder.forAccount(ProvisioningOrder.Action.CREATE, account,
+                schedule.startAt(account.getStartDate()), "account:" + account.getIdentifier());
+        orderPublisher.submit(order);
+        account.setOrderId(order.id());
+    }
+
+    private void scheduleEnd(Account account) {
+        ProvisioningOrder order = ProvisioningOrder.forAccount(ProvisioningOrder.Action.DELETE, account,
+                schedule.endAt(account.getEndDate()), "account:" + account.getIdentifier() + ":end");
+        orderPublisher.submit(order);
+        account.setEndOrderId(order.id());
+    }
+
+    private void cancel(UUID orderId) {
+        if (orderId != null) {
+            orderPublisher.cancel(orderId);
+        }
     }
 
     private AccountMatch resolveType(String identifier, String typeName) {
@@ -143,9 +190,61 @@ public class HexaAccountService implements AccountManager {
     }
 
     @Override
+    public Account updateDates(String identifier, LocalDate startDate, LocalDate endDate) {
+        Account account = getAccount(identifier);
+        if (schedule.hasEnded(account.getEndDate())) {
+            throw new AccountConflictException("The account has already expired: " + identifier);
+        }
+        boolean started = schedule.hasStarted(account.getStartDate());
+        if (started && !Objects.equals(startDate, account.getStartDate())) {
+            throw new InvalidAccountException("The start date cannot change once the account is created");
+        }
+        validateDates(startDate, endDate);
+
+        if (!started) {
+            cancel(account.getOrderId());
+            account.setStartDate(startDate);
+            scheduleCreation(account);
+        }
+        if (!Objects.equals(endDate, account.getEndDate())) {
+            cancel(account.getEndOrderId());
+            account.setEndOrderId(null);
+            account.setEndDate(endDate);
+            if (endDate != null) {
+                scheduleEnd(account);
+            }
+        }
+        return accountProvider.save(account);
+    }
+
+    @Override
+    public void cancelPending(String identifier) {
+        Account account = getAccount(identifier);
+        if (!schedule.hasStarted(account.getStartDate())) {
+            cancel(account.getOrderId());
+            cancel(account.getEndOrderId());
+            accountProvider.deleteByIdentifier(identifier);
+        } else if (account.getEndDate() != null && !schedule.hasEnded(account.getEndDate())) {
+            cancel(account.getEndOrderId());
+            account.setEndOrderId(null);
+            account.setEndDate(null);
+            accountProvider.save(account);
+        } else {
+            throw new AccountConflictException("No pending order for the account: " + identifier);
+        }
+    }
+
+    @Override
     public void deleteAccount(String identifier) {
         Account account = getAccount(identifier);
-        jobPublisher.publishDeleteAccount(account);
+        cancel(account.getEndOrderId());
+        if (!schedule.hasStarted(account.getStartDate())) {
+            // Création encore à venir : rien n'existe dans l'annuaire, il suffit de l'annuler.
+            cancel(account.getOrderId());
+        } else if (!schedule.hasEnded(account.getEndDate())) {
+            orderPublisher.submit(ProvisioningOrder.forAccount(ProvisioningOrder.Action.DELETE, account,
+                    schedule.now(), "account:" + identifier + ":delete"));
+        }
         accountProvider.deleteByIdentifier(identifier);
     }
 

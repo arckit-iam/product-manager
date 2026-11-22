@@ -100,14 +100,42 @@ public class JpaProfileProviderTest {
     }
 
     @Test
+    public void testSaveWithProductNameUpdatesTheExistingProfile() {
+        ProfileEntity toSave = new ProfileEntity();
+        ProfileEntity existing = new ProfileEntity();
+        existing.setId(7L);
+        when(profileEntityMapper.toEntity(testProfile)).thenReturn(toSave);
+        when(productRepository.findByName("Test Product")).thenReturn(testProductEntity);
+        when(profileRepository.findOneByNameAndProductId("Test Profile", 1L)).thenReturn(existing);
+        when(profileRepository.saveAndFlush(toSave)).thenReturn(toSave);
+        when(profileEntityMapper.toDomain(toSave)).thenReturn(testProfile);
+
+        jpaProfileProvider.save(testProfile, "Test Product");
+
+        assertEquals(7L, toSave.getId());
+        assertEquals(1L, toSave.getProductId());
+    }
+
+    @Test
     public void testDeleteProfile() {
-        when(profileEntityMapper.toEntity(testProfile)).thenReturn(testProfileEntity);
-        doNothing().when(profileRepository).delete(testProfileEntity);
+        when(productRepository.findByName("Test Product")).thenReturn(testProductEntity);
+        when(profileRepository.findOneByNameAndProductId("Test Profile", 1L)).thenReturn(testProfileEntity);
 
-        jpaProfileProvider.deleteProfile(testProfile);
+        jpaProfileProvider.deleteProfile("Test Product", "Test Profile");
 
-        verify(profileEntityMapper, times(1)).toEntity(testProfile);
         verify(profileRepository, times(1)).delete(testProfileEntity);
+    }
+
+    @Test
+    public void testDeleteProfileIgnoresUnknownProductOrProfile() {
+        when(productRepository.findByName("Ghost")).thenReturn(null);
+        when(productRepository.findByName("Test Product")).thenReturn(testProductEntity);
+        when(profileRepository.findOneByNameAndProductId("absent", 1L)).thenReturn(null);
+
+        jpaProfileProvider.deleteProfile("Ghost", "Test Profile");
+        jpaProfileProvider.deleteProfile("Test Product", "absent");
+
+        verify(profileRepository, never()).delete(any(ProfileEntity.class));
     }
 
     @Test

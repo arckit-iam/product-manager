@@ -58,7 +58,10 @@ class JpaAccountProviderTest {
         account.setProduct(product);
         account.setSource(AccountSource.API);
         account.setMetadata(new HashMap<>(Map.of("owner", "alice")));
-        account.setJobId(UUID.randomUUID());
+        account.setOrderId(UUID.randomUUID());
+        account.setEndOrderId(UUID.randomUUID());
+        account.setStartDate(java.time.LocalDate.of(2026, 7, 1));
+        account.setEndDate(java.time.LocalDate.of(2026, 7, 31));
         return account;
     }
 
@@ -72,6 +75,9 @@ class JpaAccountProviderTest {
         assertEquals("compta", saved.getProduct());
         assertEquals(Map.of("owner", "alice"), saved.getMetadata());
         assertEquals(AccountSource.API, saved.getSource());
+        assertEquals(java.time.LocalDate.of(2026, 7, 1), saved.getStartDate());
+        assertEquals(java.time.LocalDate.of(2026, 7, 31), saved.getEndDate());
+        assertTrue(saved.getOrderId() != null && saved.getEndOrderId() != null);
         assertTrue(saved.getCreatedAt() != null);
     }
 

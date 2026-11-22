@@ -3,7 +3,7 @@
 ## Vue d'ensemble
 
 **product-manager** est un service de gestion de produits applicatifs et de leurs profils de sécurité.
-Chaque profil est associé à un groupe AD via le service **arc-publisher** : la création ou la suppression d'un profil déclenche automatiquement un job de provisioning.
+Chaque profil est associé à un groupe AD via le service **arc-publisher** : la création ou la suppression d'un profil déclenche automatiquement un ordre de provisioning.
 
 ---
 
@@ -185,7 +185,9 @@ Lecture : `ARC_READER`, `ARC_PUBLISHER` ou `ARC_ADMIN`. Écriture : `ARC_PUBLISH
 | `PUT /accounts/{identifier}/metadata` | Remplace les métadonnées | 200, 400, 404 |
 | `PUT /accounts/{identifier}/product` | Corrélation manuelle `{"product":"compta"}` | 200, 404 |
 | `POST /accounts/correlate` | Rejoue les regex ; `{"correlated": n}` | 200 |
-| `DELETE /accounts/{identifier}` | Suppression + job DELETE | 204, 404 |
+| `PUT /accounts/{identifier}/dates` | `{"startDate"?, "endDate"?}` (`AAAA-MM-JJ`) ; l'ordre en attente est annulé puis replanifié | 200, 400, 404 |
+| `POST /accounts/{identifier}/cancel-pending` | Annule l'ordre planifié non encore exécuté | 200, 404, 409 |
+| `DELETE /accounts/{identifier}` | Suppression + ordre DELETE (ou annulation de l'ordre en attente) | 204, 404 |
 
 **POST /accounts**
 ```json
@@ -200,20 +202,20 @@ Le type et le produit sont déduits de l'identifiant par les regex des types con
   "product": "compta",
   "source": "API",
   "metadata": { "owner": "alice" },
-  "jobId": "7f8422ec-9ad4-48b2-95ef-36f8a3d0a220",
+  "orderId": "7f8422ec-9ad4-48b2-95ef-36f8a3d0a220",
   "createdAt": "2026-01-01T12:00:00Z"
 }
 ```
 
 `400` : identifiant ne correspondant à aucun type, ou métadonnées invalides (champ inconnu, obligatoire manquant, mauvais type). `409` : identifiant déjà existant.
 
-La création publie un job `CREATE`/`IDENTITY` auprès d'arc-publisher avec les attributs `metadata.<champ>`, `product` et `accountType` ; la suppression publie un job `DELETE`.
+La création publie un ordre `CREATE`/`IDENTITY` (différé à `startDate` si elle est future) avec les attributs `metadata.<champ>`, `product` et `accountType` ; la suppression publie un ordre `DELETE` (au lendemain de `endDate` si elle est définie).
 
 ---
 
 ## Intégration arc-publisher
 
-Lors de la création d'un profil, product-manager envoie à arc-publisher :
+Lors de la création d'un profil, product-manager dépose un ordre dans la file `arc.orders` (canal `kafka`, par défaut) ou l'envoie en `POST /orders` (canal `api`) ; le contenu est le même, avec en plus `id` (UUID généré par le manager) et `operation` (`SUBMIT` ou `CANCEL`) sur la file :
 
 ```json
 {
@@ -225,14 +227,14 @@ Lors de la création d'un profil, product-manager envoie à arc-publisher :
   "scope": "<profile.scope>",
   "identityId": "<productName>",
   "identityName": "<productName>",
-  "executeAt": "<now>",
+  "executeAt": "<startDate, ou maintenant>",
   "correlationId": "<uuid>"
 }
 ```
 
 arc-publisher publie ensuite l'event sur le topic Kafka `arc.provisioning.entitlement`, qui est consommé par **arc-agent-ad** pour créer le groupe dans l'Active Directory.
 
-L'appel est authentifié : product-manager obtient auprès d'arc-auth, avec son compte de service (membre de `arc-publishers`), un jeton qu'il conserve jusqu'à peu avant son expiration. Si arc-publisher le refuse (`401`), un nouveau jeton est demandé et l'appel est retenté une fois.
+L'appel (canal `api`) est authentifié : product-manager obtient auprès d'arc-auth, avec son compte de service (membre de `arc-publishers`), un jeton qu'il conserve jusqu'à peu avant son expiration. Si arc-publisher le refuse (`401`), un nouveau jeton est demandé et l'appel est retenté une fois.
 
 ---
 
@@ -240,7 +242,10 @@ L'appel est authentifié : product-manager obtient auprès d'arc-auth, avec son 
 
 | Propriété | Variable d'environnement | Défaut | Description |
 |-----------|--------------------------|--------|-------------|
-| `arc.publisher.url` | `ARC_PUBLISHER_URL` | `http://arc-publisher:8081` | URL du service arc-publisher |
+| `arc.publisher.url` | `ARC_PUBLISHER_URL` | `http://arc-publisher:8081` | URL du service arc-publisher (canal `api`) |
+| `arc.orders.channel` | `ARC_ORDERS_CHANNEL` | `kafka` | Canal des ordres : `kafka` ou `api` |
+| `arc.orders.topic` | `ARC_ORDERS_TOPIC` | `arc.orders` | File d'ordres lue par arc-publisher |
+| `arc.orders.zone` | `ARC_ORDERS_ZONE` | `UTC` | Fuseau des jours de début et de fin |
 | `arc.publisher.target-system` | `ARC_PUBLISHER_TARGET_SYSTEM` | `ad://AD01` | Identifiant du système AD cible |
 | `spring.security.oauth2.resourceserver.jwt.issuer-uri` | `ARC_SECURITY_ISSUER_URI` | aucun (obligatoire) | Valeur attendue du claim `iss` |
 | `spring.security.oauth2.resourceserver.jwt.jwk-set-uri` | `ARC_SECURITY_JWK_SET_URI` | `http://arc-auth:8082/.well-known/jwks.json` | Clés publiques d'arc-auth |
@@ -257,7 +262,7 @@ POST /products/{productName}/profiles
         │
         ▼
 product-manager
-        │  POST /jobs
+        │  ordre CREATE (arc.orders)
         ▼
 arc-publisher ──► Kafka: arc.provisioning.entitlement
                           │
